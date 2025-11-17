@@ -1,0 +1,54 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+
+spring:
+  application:
+    name: picture-manager
+
+  # 数据源配置
+  datasource:
+    url: jdbc:mysql://localhost:3307/picture_manager?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai&characterEncoding=utf8
+    username: root
+    password: root
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  # JPA 配置
+  jpa:
+    hibernate:
+      ddl-auto: validate  # 重要：使用validate而不是create，避免覆盖现有数据
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+        format_sql: true
+        jdbc:
+          time_zone: Asia/Shanghai
+    open-in-view: false
+
+  # 文件上传配置
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+# 自定义配置
+app:
+  file:
+    upload-dir: ./uploads
+    thumbnail-width: 300
+    allowed-types: image/jpeg,image/png,image/gif,image/webp
+
+# 日志配置
+logging:
+  level:
+    com.picturemanager: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
