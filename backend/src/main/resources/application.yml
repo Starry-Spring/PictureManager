@@ -24,7 +24,7 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update  # 重要：使用update而不是create，避免覆盖现有数据
-    show-sql: true
+    show-sql: false
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQL8Dialect
@@ -41,6 +41,10 @@ spring:
 
 # 自定义配置
 app:
+  jwt:
+    secret: your-jwt-secret-key-here-change-in-production
+    expiration: 86400000
+
   file:
     upload-dir: ./uploads
     thumbnail-width: 300

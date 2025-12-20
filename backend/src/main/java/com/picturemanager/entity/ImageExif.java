@@ -55,4 +55,100 @@ public class ImageExif {
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public Image getImage() {
+        return image;
+    }
+
+    public void setImage(Image image) {
+        this.image = image;
+    }
+
+    public String getCameraMake() {
+        return cameraMake;
+    }
+
+    public void setCameraMake(String cameraMake) {
+        this.cameraMake = cameraMake;
+    }
+
+    public String getCameraModel() {
+        return cameraModel;
+    }
+
+    public void setCameraModel(String cameraModel) {
+        this.cameraModel = cameraModel;
+    }
+
+    public LocalDateTime getTakenAt() {
+        return takenAt;
+    }
+
+    public void setTakenAt(LocalDateTime takenAt) {
+        this.takenAt = takenAt;
+    }
+
+    public String getExposureTime() {
+        return exposureTime;
+    }
+
+    public void setExposureTime(String exposureTime) {
+        this.exposureTime = exposureTime;
+    }
+
+    public String getFNumber() {
+        return fNumber;
+    }
+
+    public void setFNumber(String fNumber) {
+        this.fNumber = fNumber;
+    }
+
+    public Integer getIsoSpeed() {
+        return isoSpeed;
+    }
+
+    public void setIsoSpeed(Integer isoSpeed) {
+        this.isoSpeed = isoSpeed;
+    }
+
+    public String getFocalLength() {
+        return focalLength;
+    }
+
+    public void setFocalLength(String focalLength) {
+        this.focalLength = focalLength;
+    }
+
+    public BigDecimal getLatitude() {
+        return latitude;
+    }
+
+    public void setLatitude(BigDecimal latitude) {
+        this.latitude = latitude;
+    }
+
+    public BigDecimal getLongitude() {
+        return longitude;
+    }
+
+    public void setLongitude(BigDecimal longitude) {
+        this.longitude = longitude;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
 }
