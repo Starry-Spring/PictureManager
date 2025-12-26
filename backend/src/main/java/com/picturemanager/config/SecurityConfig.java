@@ -28,6 +28,7 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()  // 允许认证相关请求
+                        .requestMatchers("/api/images/*/file").permitAll()  // 允许访问图片文件（通过token验证）
                         .anyRequest().authenticated()  // 其他请求需要认证
                 );
 

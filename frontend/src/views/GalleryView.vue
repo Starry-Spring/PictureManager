@@ -271,7 +271,8 @@ const userId = computed(() => userStore.user?.id)
 // 获取图片URL
 const getImageUrl = (image: ImageResponseDTO) => {
   // 这里需要根据实际的后端文件服务地址来构建URL
-  return `/api/images/${image.id}/file?userId=${userId.value}`
+  const token = userStore.token;
+  return `/api/images/${image.id}/file?token=${token}`
 }
 
 // 加载数据

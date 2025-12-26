@@ -4,7 +4,11 @@ package com.picturemanager.controller;
 import com.picturemanager.dto.ImageDTO;
 import com.picturemanager.dto.ImageResponseDTO;
 import com.picturemanager.dto.PaginatedResponse;
+import com.picturemanager.entity.User;
+import com.picturemanager.repository.UserRepository;
+import com.picturemanager.security.JwtTokenProvider;
 import com.picturemanager.service.ImageService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
@@ -16,11 +20,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/images")
@@ -29,6 +35,12 @@ public class ImageController {
 
     @Autowired
     private ImageService imageService;
+    
+    @Autowired
+    private UserRepository userRepository;
+    
+    @Autowired
+    private JwtTokenProvider jwtTokenProvider;
 
     @PostMapping("/upload")
     public ResponseEntity<?> uploadImage(
@@ -80,7 +92,19 @@ public class ImageController {
             @RequestParam("userId") Long userId) {
         try {
             ImageResponseDTO image = imageService.getImageById(userId, id);
+            System.out.println("=== 图片访问调试信息 (userId方式) ===");
+            System.out.println("图片ID: " + id);
+            System.out.println("用户ID: " + userId);
+            System.out.println("文件路径: " + image.getFilePath());
+            System.out.println("存储文件名: " + image.getStoredFilename());
+            System.out.println("MIME类型: " + image.getMimeType());
+            
             Path imagePath = Paths.get(image.getFilePath());
+            System.out.println("解析的路径: " + imagePath.toString());
+            System.out.println("文件是否存在: " + Files.exists(imagePath));
+            System.out.println("文件是否可读: " + Files.isReadable(imagePath));
+            System.out.println("===================");
+            
             Resource resource = new UrlResource(imagePath.toUri());
             
             if (resource.exists() && resource.isReadable()) {
@@ -94,7 +118,77 @@ public class ImageController {
         } catch (RuntimeException e) {
             Map<String, String> error = new HashMap<>();
             error.put("message", e.getMessage());
+            System.out.println("运行时异常: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        } catch (Exception e) {
+            Map<String, String> error = new HashMap<>();
+            error.put("message", e.getMessage());
+            System.out.println("其他异常: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+    
+    @GetMapping(value = "/{id}/file", params = "token")
+    public ResponseEntity<Resource> getImageFileWithToken(
+            @PathVariable Long id,
+            @RequestParam("token") String token,
+            HttpServletRequest request) {
+        try {
+            // 从token中解析用户信息
+            String username = jwtTokenProvider.getUsernameFromToken(token);
+            
+            // 验证token
+            if (!jwtTokenProvider.validateToken(token)) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            }
+            
+            // 通过用户名获取用户
+            Optional<User> userOptional = userRepository.findByUsername(username);
+            if (userOptional.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            }
+            
+            Long userId = userOptional.get().getId();
+            
+            // 获取图片信息
+            ImageResponseDTO image = imageService.getImageById(userId, id);
+            System.out.println("=== 图片访问调试信息 ===");
+            System.out.println("图片ID: " + id);
+            System.out.println("用户ID: " + userId);
+            System.out.println("文件路径: " + image.getFilePath());
+            System.out.println("存储文件名: " + image.getStoredFilename());
+            System.out.println("MIME类型: " + image.getMimeType());
+            
+            Path imagePath = Paths.get(image.getFilePath());
+            System.out.println("解析的路径: " + imagePath.toString());
+            System.out.println("文件是否存在: " + Files.exists(imagePath));
+            System.out.println("文件是否可读: " + Files.isReadable(imagePath));
+            System.out.println("===================");
+            
+            Resource resource = new UrlResource(imagePath.toUri());
+            
+            if (resource.exists() && resource.isReadable()) {
+                return ResponseEntity.ok()
+                        .contentType(MediaType.parseMediaType(image.getMimeType()))
+                        .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + image.getStoredFilename() + "\"")
+                        .body(resource);
+            } else {
+                return ResponseEntity.notFound().build();
+            }
+        } catch (RuntimeException e) {
+            Map<String, String> error = new HashMap<>();
+            error.put("message", e.getMessage());
+            System.out.println("运行时异常: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        } catch (Exception e) {
+            Map<String, String> error = new HashMap<>();
+            error.put("message", e.getMessage());
+            System.out.println("其他异常: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 

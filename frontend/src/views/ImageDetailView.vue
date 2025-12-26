@@ -13,7 +13,7 @@
       <!-- 图片展示区域 -->
       <div class="image-display">
         <div class="image-wrapper">
-          <img :src="getImageUrl()" :alt="image.title" class="main-image" />
+          <img :src="imageSrc" :alt="image.title" class="main-image" />
           <div class="image-overlay">
             <div class="image-toolbar">
               <el-button-group>
@@ -247,6 +247,7 @@ const userStore = useUserStore()
 
 // 数据
 const image = ref<ImageResponseDTO | null>(null)
+const imageSrc = ref('')
 const loading = ref(true)
 const saving = ref(false)
 const showInfoPanel = ref(false)
@@ -282,9 +283,26 @@ const hasExifInfo = computed(() => {
 })
 
 // 方法
-const getImageUrl = () => {
+const getImageUrl = async () => {
   if (!image.value) return ''
-  return `/api/images/${image.value.id}/file?userId=${userId.value}`
+  
+  try {
+    // 使用axios获取图片blob
+    const token = userStore.token;
+    const response = await axios.get(`/api/images/${image.value.id}/file`, {
+      params: {
+        token: token
+      },
+      responseType: 'blob'  // 指定响应类型为blob
+    })
+    
+    // 创建blob URL
+    const blob = new Blob([response.data], { type: response.data.type })
+    return URL.createObjectURL(blob)
+  } catch (error) {
+    console.error('获取图片失败:', error)
+    return ''
+  }
 }
 
 const getFileExtension = () => {
@@ -298,15 +316,17 @@ const loadImage = async () => {
 
   loading.value = true
   try {
-    const response = await fetch(`/api/images/${imageId.value}?userId=${userId.value}`)
-    if (response.ok) {
-      image.value = await response.json()
-    } else {
-      const error = await response.json()
-      ElMessage.error(error.message || '加载图片失败')
-      router.push('/gallery')
-    }
+    const response = await axios.get(`/api/images/${imageId.value}`, {
+      params: {
+        userId: userId.value
+      }
+    })
+    image.value = response.data
+    
+    // 加载图片源
+    imageSrc.value = await getImageUrl()
   } catch (error) {
+    console.error('加载图片失败:', error)
     ElMessage.error('加载图片失败')
     router.push('/gallery')
   } finally {
@@ -331,16 +351,23 @@ const downloadImage = async () => {
   if (!image.value) return
 
   try {
-    const response = await fetch(getImageUrl())
-    const blob = await response.blob()
-    const url = window.URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = image.value.title || image.value.originalFilename
-    document.body.appendChild(a)
-    a.click()
-    window.URL.revokeObjectURL(url)
-    document.body.removeChild(a)
+    const token = userStore.token;
+    const response = await axios.get(`/api/images/${image.value.id}/file`, {
+      params: {
+        token: token
+      },
+      responseType: 'blob'
+    });
+    
+    const blob = response.data;
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = image.value.title || image.value.originalFilename;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
 
     ElMessage.success('开始下载')
   } catch (error) {

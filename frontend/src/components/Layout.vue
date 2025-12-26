@@ -16,6 +16,10 @@
             <el-icon><MagicStick /></el-icon>
             <span>AI分析</span>
           </router-link>
+          <router-link to="/user" class="nav-item" active-class="active">
+            <el-icon><User /></el-icon>
+            <span>用户设置</span>
+          </router-link>
         </nav>
       </div>
 
@@ -86,7 +90,7 @@
         width="500px"
         @close="handleUploadClose"
     >
-      <UploadComponent @success="handleUploadSuccess" />
+      <UploadImageForm @success="handleUploadSuccess" />
     </el-dialog>
   </div>
 </template>
@@ -94,7 +98,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { useUserStore } from '@/stores/userStore'
+import { useUserStore } from '../stores/userStore'
 import {
   Picture,
   MagicStick,
@@ -105,7 +109,7 @@ import {
   ArrowDown,
   Plus
 } from '@element-plus/icons-vue'
-import UploadComponent from '@/components/Upload/UploadComponent.vue'
+import UploadImageForm from '../components/UploadImageForm.vue'
 
 const router = useRouter()
 const userStore = useUserStore()

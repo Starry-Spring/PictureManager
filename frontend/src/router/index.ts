@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useUserStore } from '@/stores/userStore'
-import Layout from '@/views/Layout.vue'
+import Layout from '@/components/Layout.vue'
 
 const router = createRouter({
     history: createWebHistory(),
@@ -57,8 +57,14 @@ const router = createRouter({
 })
 
 // 路由守卫
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
     const userStore = useUserStore()
+    
+    // 如果尚未初始化认证状态，尝试初始化
+    if (!userStore.isAuthenticated && !userStore.initialized) {
+        await userStore.initializeAuth()
+        userStore.initialized = true
+    }
 
     if (to.meta.requiresAuth && !userStore.isAuthenticated) {
         next('/login')

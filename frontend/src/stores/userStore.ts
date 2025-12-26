@@ -6,7 +6,8 @@ export const useUserStore = defineStore('user', {
     state: () => ({
         user: null,
         isAuthenticated: false,
-        token: localStorage.getItem('token') || ''
+        token: localStorage.getItem('token') || '',
+        initialized: false
     }),
 
     actions: {
@@ -55,6 +56,7 @@ export const useUserStore = defineStore('user', {
             this.user = null
             this.token = ''
             this.isAuthenticated = false
+            this.initialized = false
             
             // 清除localStorage中的token
             localStorage.removeItem('token')
@@ -81,6 +83,7 @@ export const useUserStore = defineStore('user', {
                     this.logout()
                 }
             }
+            this.initialized = true
         }
     }
 })
