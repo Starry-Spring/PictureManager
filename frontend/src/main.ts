@@ -7,8 +7,15 @@ import App from './App.vue'
 import router from './router'
 import axios from 'axios'
 
-axios.defaults.baseURL = 'http://localhost:8081/api'
+// 设置axios默认配置
+axios.defaults.baseURL = 'http://localhost:3000'
 axios.defaults.headers.common['Content-Type'] = 'application/json'
+
+// 从localStorage中获取并设置认证令牌
+const token = localStorage.getItem('token')
+if (token) {
+    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
+}
 
 const app = createApp(App)
 const pinia = createPinia()

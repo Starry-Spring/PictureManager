@@ -3,7 +3,14 @@
 </template>
 
 <script setup lang="ts">
-// 暂时留空
+import { onMounted } from 'vue'
+import { useUserStore } from './stores/userStore'
+
+const userStore = useUserStore()
+
+onMounted(async () => {
+  await userStore.initializeAuth()
+})
 </script>
 
 <style>

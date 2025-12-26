@@ -12,4 +12,29 @@ public class FileStorageProperties {
     private String uploadDir = "./uploads";
     private int thumbnailWidth = 300;
     private String allowedTypes = "image/jpeg,image/png,image/gif,image/webp";
+
+    // 确保 Lombok 生成 getter，或者手动添加
+    public String getUploadDir() {
+        return uploadDir;
+    }
+
+    public void setUploadDir(String uploadDir) {
+        this.uploadDir = uploadDir;
+    }
+
+    public String getAllowedTypes() {
+        return allowedTypes;
+    }
+
+    public void setAllowedTypes(String allowedTypes) {
+        this.allowedTypes = allowedTypes;
+    }
+
+    public int getThumbnailWidth() {
+        return thumbnailWidth;
+    }
+
+    public void setThumbnailWidth(int thumbnailWidth) {
+        this.thumbnailWidth = thumbnailWidth;
+    }
 }

@@ -5,11 +5,13 @@ import com.picturemanager.dto.UserDTO;
 import com.picturemanager.dto.LoginDTO;
 import com.picturemanager.dto.UserResponseDTO;
 import com.picturemanager.entity.User;
+import com.picturemanager.security.JwtTokenProvider;
 import com.picturemanager.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -23,6 +25,14 @@ public class AuthController {
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private JwtTokenProvider jwtTokenProvider;
+
+    @GetMapping("/hello")
+    public String hello() {
+        return "Hello from TestController!";
+    }
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@Valid @RequestBody UserDTO userDTO) {
@@ -68,17 +78,50 @@ public class AuthController {
 
             User user = userOptional.get();
 
-            // 创建响应对象，不生成token
+            // 生成JWT令牌
+            String token = jwtTokenProvider.generateToken(user.getUsername());
+
+            // 创建响应对象
             UserResponseDTO response = new UserResponseDTO();
             response.setId(user.getId());
             response.setUsername(user.getUsername());
             response.setEmail(user.getEmail());
             response.setDisplayName(user.getDisplayName());
             response.setAvatarUrl(user.getAvatarUrl());
-            response.setToken("NO_TOKEN_NEEDED"); // 简单占位符
+            response.setToken(token);
 
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
+            Map<String, String> error = new HashMap<>();
+            error.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+        }
+    }
+    
+    @GetMapping("/verify")
+    public ResponseEntity<?> verifyToken(Authentication authentication) {
+        try {
+            if (authentication != null && authentication.isAuthenticated()) {
+                String username = authentication.getName();
+                Optional<User> userOptional = userService.getUserByUsername(username);
+                
+                if (userOptional.isPresent()) {
+                    User user = userOptional.get();
+                    
+                    // 创建响应对象
+                    UserResponseDTO response = new UserResponseDTO();
+                    response.setId(user.getId());
+                    response.setUsername(user.getUsername());
+                    response.setEmail(user.getEmail());
+                    response.setDisplayName(user.getDisplayName());
+                    response.setAvatarUrl(user.getAvatarUrl());
+                    
+                    return ResponseEntity.ok(response);
+                }
+            }
+            
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "无效的令牌"));
+        } catch (Exception e) {
             Map<String, String> error = new HashMap<>();
             error.put("message", e.getMessage());
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);

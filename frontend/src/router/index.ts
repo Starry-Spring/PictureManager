@@ -1,54 +1,57 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { useUserStore } from '../stores/userStore'
+import { useUserStore } from '@/stores/userStore'
+import Layout from '@/views/Layout.vue'
 
 const router = createRouter({
     history: createWebHistory(),
     routes: [
         {
-            path: '/',
-            redirect: '/login'
-        },
-        {
             path: '/login',
             name: 'Login',
-            component: () => import('../views/LoginView.vue'),
+            component: () => import('@/views/LoginView.vue'),
             meta: { requiresAuth: false }
         },
         {
             path: '/register',
             name: 'Register',
-            component: () => import('../views/RegisterView.vue'),
+            component: () => import('@/views/RegisterView.vue'),
             meta: { requiresAuth: false }
         },
         {
-            path: '/dashboard',
-            name: 'Dashboard',
-            component: () => import('../views/DashboardView.vue'),
-            meta: { requiresAuth: true }
-        },
-        {
-            path: '/gallery',
-            name: 'Gallery',
-            component: () => import('../views/GalleryView.vue'),
-            meta: { requiresAuth: true }
-        },
-        {
-            path: '/user',
-            name: 'User',
-            component: () => import('../views/UserView.vue'),
-            meta: { requiresAuth: true }
-        },
-        {
-            path: '/image/:id',
-            name: 'ImageDetail',
-            component: () => import('../views/ImageDetailView.vue'),
-            meta: { requiresAuth: true }
-        },
-        {
-            path: '/ai',
-            name: 'AI',
-            component: () => import('../views/AIView.vue'),
-            meta: { requiresAuth: true }
+            path: '/',
+            component: Layout,
+            meta: { requiresAuth: true },
+            children: [
+                {
+                    path: '',
+                    redirect: '/gallery'
+                },
+                {
+                    path: 'gallery',
+                    name: 'Gallery',
+                    component: () => import('@/views/GalleryView.vue')
+                },
+                {
+                    path: 'dashboard',
+                    name: 'Dashboard',
+                    component: () => import('@/views/DashboardView.vue')
+                },
+                {
+                    path: 'user',
+                    name: 'User',
+                    component: () => import('@/views/UserView.vue')
+                },
+                {
+                    path: 'image/:id',
+                    name: 'ImageDetail',
+                    component: () => import('@/views/ImageDetailView.vue')
+                },
+                {
+                    path: 'ai',
+                    name: 'AI',
+                    component: () => import('@/views/AIView.vue')
+                }
+            ]
         }
     ]
 })
