@@ -67,23 +67,28 @@ export const useUserStore = defineStore('user', {
         
         async initializeAuth() {
             const token = localStorage.getItem('token')
-            if (token) {
-                this.token = token
-                // 设置axios默认请求头
-                axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
-                
-                // 尝试获取用户信息以验证令牌是否有效
-                try {
-                    const response = await axios.get('/api/auth/verify')
-                    this.user = response.data
-                    this.isAuthenticated = true
-                } catch (error) {
-                    // 如果令牌无效，清除本地存储
-                    console.error('令牌验证失败:', error)
-                    this.logout()
+            try {
+                if (token) {
+                    this.token = token
+                    // 设置axios默认请求头
+                    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
+                    
+                    // 尝试获取用户信息以验证令牌是否有效
+                    try {
+                        const response = await axios.get('/api/auth/verify')
+                        this.user = response.data
+                        this.isAuthenticated = true
+                    } catch (error) {
+                        // 如果令牌无效，清除本地存储
+                        console.error('令牌验证失败:', error)
+                        this.logout()
+                    }
+                } else {
+                    this.isAuthenticated = false
                 }
+            } finally {
+                this.initialized = true
             }
-            this.initialized = true
         }
     }
 })

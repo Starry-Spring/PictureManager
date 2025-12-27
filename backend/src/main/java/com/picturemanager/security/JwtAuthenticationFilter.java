@@ -25,7 +25,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     // 定义不需要 JWT 验证的路径
     private static final List<String> EXCLUDED_PATHS = List.of(
-            "/api/auth/",
+            "/api/auth/login",
+            "/api/auth/register",
             "/api/test/",
             "/uploads/",
             "/assets/",
@@ -38,7 +39,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         // 检查请求路径是否在排除列表中
         for (String excludedPath : EXCLUDED_PATHS) {
-            if (path.startsWith(excludedPath)) {
+            if (path.equals(excludedPath) || path.startsWith(excludedPath + "/")) {
                 return true; // 跳过这个过滤器
             }
         }

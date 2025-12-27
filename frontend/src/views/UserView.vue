@@ -233,7 +233,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useUserStore } from '../stores/userStore'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
@@ -326,6 +326,9 @@ const passwordRules = {
     { validator: validateConfirmPassword, trigger: 'blur' }
   ]
 }
+
+// 计算属性
+const userId = computed(() => userStore.user?.id)
 
 // 方法
 const loadUserInfo = async () => {
@@ -481,8 +484,18 @@ const showDeleteDialog = () => {
 
 // 生命周期
 onMounted(() => {
-  loadUserInfo()
+  // 如果用户信息已存在，直接加载
+  if (userStore.user) {
+    loadUserInfo()
+  }
 })
+
+// 监听用户信息变化，确保用户信息已准备好
+watch(() => userStore.user, (newUser) => {
+  if (newUser) {
+    loadUserInfo()
+  }
+}, { immediate: true })
 </script>
 
 <style scoped>

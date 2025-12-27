@@ -27,8 +27,8 @@ public class SecurityConfig {
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)  // 不创建会话
                 )
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**").permitAll()  // 允许认证相关请求
-                        .requestMatchers("/api/images/*/file").permitAll()  // 允许访问图片文件（通过token验证）
+                        .requestMatchers("/api/auth/login", "/api/auth/register").permitAll()  // 登录注册无需认证
+                        .requestMatchers("/api/images/*/file").permitAll()  // 图片文件通过URL参数验证
                         .anyRequest().authenticated()  // 其他请求需要认证
                 );
 

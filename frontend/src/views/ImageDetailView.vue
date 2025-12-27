@@ -190,7 +190,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '../stores/userStore'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -488,8 +488,18 @@ const goBack = () => {
 }
 
 onMounted(() => {
-  loadImage()
+  // 如果用户信息已存在，直接加载
+  if (userStore.user) {
+    loadImage()
+  }
 })
+
+// 监听用户信息变化，确保用户信息已准备好
+watch(() => userStore.user, (newUser) => {
+  if (newUser) {
+    loadImage()
+  }
+}, { immediate: true })
 </script>
 
 <style scoped>
