@@ -182,13 +182,50 @@ public class ImageService {
 
     @Transactional(readOnly = true)
     public PaginatedResponse<ImageResponseDTO> getUserImages(Long userId, int page, int size, String sortBy, String direction) {
+        return getUserImages(userId, page, size, sortBy, direction, null, null, null);
+    }
+    
+    @Transactional(readOnly = true)
+    public PaginatedResponse<ImageResponseDTO> getUserImages(Long userId, int page, int size, String sortBy, String direction, 
+                                                              String keyword, String searchType, String tag) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("用户不存在"));
 
         Sort.Direction sortDirection = direction.equalsIgnoreCase("desc") ? Sort.Direction.DESC : Sort.Direction.ASC;
         Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sortBy));
 
-        Page<Image> imagePage = imageRepository.findByUserAndIsDeletedFalse(user, pageable);
+        Page<Image> imagePage;
+        
+        // 处理标签过滤
+        if (tag != null && !tag.isEmpty()) {
+            imagePage = imageRepository.findByUserAndTag(user, tag, pageable);
+        }
+        // 处理关键词搜索
+        else if (keyword != null && !keyword.isEmpty()) {
+            String decodedKeyword = keyword;
+            try {
+                decodedKeyword = java.net.URLDecoder.decode(keyword, "UTF-8");
+            } catch (Exception e) {
+                // 如果解码失败，使用原始关键词
+            }
+            
+            switch (searchType != null ? searchType : "all") {
+                case "title":
+                    imagePage = imageRepository.searchByTitle(user, decodedKeyword, pageable);
+                    break;
+                case "description":
+                    imagePage = imageRepository.searchByDescription(user, decodedKeyword, pageable);
+                    break;
+                case "tag":
+                    imagePage = imageRepository.searchByTagName(user, decodedKeyword, pageable);
+                    break;
+                default:
+                    imagePage = imageRepository.searchAll(user, decodedKeyword, pageable);
+                    break;
+            }
+        } else {
+            imagePage = imageRepository.findByUserAndIsDeletedFalse(user, pageable);
+        }
 
         List<ImageResponseDTO> content = imagePage.getContent().stream()
                 .map(this::convertToResponseDTO)

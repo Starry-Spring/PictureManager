@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { useUserStore } from '@/stores/userStore'
-import Layout from '@/components/Layout.vue'
+import { useUserStore } from '../stores/userStore'
+import Layout from '../components/Layout.vue'
 
 const router = createRouter({
     history: createWebHistory(),
@@ -8,13 +8,13 @@ const router = createRouter({
         {
             path: '/login',
             name: 'Login',
-            component: () => import('@/views/LoginView.vue'),
+            component: () => import('../views/LoginView.vue'),
             meta: { requiresAuth: false }
         },
         {
             path: '/register',
             name: 'Register',
-            component: () => import('@/views/RegisterView.vue'),
+            component: () => import('../views/RegisterView.vue'),
             meta: { requiresAuth: false }
         },
         {
@@ -29,27 +29,27 @@ const router = createRouter({
                 {
                     path: 'gallery',
                     name: 'Gallery',
-                    component: () => import('@/views/GalleryView.vue')
+                    component: () => import('../views/GalleryView.vue')
                 },
                 {
                     path: 'dashboard',
                     name: 'Dashboard',
-                    component: () => import('@/views/DashboardView.vue')
+                    component: () => import('../views/DashboardView.vue')
                 },
                 {
                     path: 'user',
                     name: 'User',
-                    component: () => import('@/views/UserView.vue')
+                    component: () => import('../views/UserView.vue')
                 },
                 {
                     path: 'image/:id',
                     name: 'ImageDetail',
-                    component: () => import('@/views/ImageDetailView.vue')
+                    component: () => import('../views/ImageDetailView.vue')
                 },
                 {
                     path: 'ai',
                     name: 'AI',
-                    component: () => import('@/views/AIView.vue')
+                    component: () => import('../views/AIView.vue')
                 }
             ]
         }
@@ -61,9 +61,8 @@ router.beforeEach(async (to, from, next) => {
     const userStore = useUserStore()
     
     // 如果尚未初始化认证状态，尝试初始化
-    if (!userStore.isAuthenticated && !userStore.initialized) {
+    if (!userStore.initialized) {
         await userStore.initializeAuth()
-        userStore.initialized = true
     }
 
     if (to.meta.requiresAuth && !userStore.isAuthenticated) {

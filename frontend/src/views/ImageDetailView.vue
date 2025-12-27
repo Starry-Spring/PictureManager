@@ -1,320 +1,231 @@
-<!-- src/views/ImageDetailView.vue -->
 <template>
-  <div class="image-detail-container" v-loading="loading">
-    <!-- 返回按钮 -->
-    <div class="back-button">
-      <el-button @click="goBack" type="text">
-        <el-icon><ArrowLeft /></el-icon>
-        返回图片库
+  <div class="image-detail-container">
+    <div class="image-detail-header">
+      <el-button @click="goBack" icon="ArrowLeft" plain>返回</el-button>
+      <h1 class="image-title">{{ image?.title || '图片详情' }}</h1>
+      <el-button @click="saveChanges" type="primary" :loading="saving" :disabled="!isEditing">
+        保存更改
       </el-button>
     </div>
 
-    <div class="image-content" v-if="image">
-      <!-- 图片展示区域 -->
-      <div class="image-display">
-        <div class="image-wrapper">
-          <img :src="imageSrc" :alt="image.title" class="main-image" />
-          <div class="image-overlay">
-            <div class="image-toolbar">
-              <el-button-group>
-                <el-button @click="downloadImage" type="primary">
-                  <el-icon><Download /></el-icon>
-                  下载
-                </el-button>
-                <el-button @click="editImage" type="warning">
-                  <el-icon><Edit /></el-icon>
-                  编辑
-                </el-button>
-                <el-button @click="deleteImage" type="danger">
-                  <el-icon><Delete /></el-icon>
-                  删除
-                </el-button>
-              </el-button-group>
+    <div class="image-detail-content">
+      <div class="image-preview-section">
+        <div class="image-display">
+          <img :src="imageSrc" :alt="image?.title" class="main-image" v-if="imageSrc" />
+          <div class="image-placeholder" v-else>图片加载中...</div>
+        </div>
+        
+        <!-- 图片编辑工具栏 -->
+        <div class="editing-tools" v-if="isEditing">
+          <h3>编辑工具</h3>
+          <div class="tool-group">
+            <div class="tool-item">
+              <label>亮度:</label>
+              <el-slider v-model="editSettings.brightness" :min="-100" :max="100" @change="applyFilters" />
+            </div>
+            <div class="tool-item">
+              <label>对比度:</label>
+              <el-slider v-model="editSettings.contrast" :min="-100" :max="100" @change="applyFilters" />
+            </div>
+            <div class="tool-item">
+              <label>饱和度:</label>
+              <el-slider v-model="editSettings.saturation" :min="-100" :max="100" @change="applyFilters" />
             </div>
           </div>
+          
+          <el-button @click="resetFilters" plain>重置</el-button>
         </div>
       </div>
 
-      <!-- 图片信息区域 -->
-      <div class="image-info">
-        <!-- 标题和操作 -->
-        <div class="info-header">
-          <h1 class="image-title">{{ image.title }}</h1>
-          <div class="header-actions">
-            <el-button @click="toggleInfoPanel" type="text">
-              <el-icon>
-                <component :is="showInfoPanel ? 'ArrowUp' : 'ArrowDown'" />
-              </el-icon>
-              {{ showInfoPanel ? '隐藏详细信息' : '显示详细信息' }}
-            </el-button>
-          </div>
-        </div>
-
-        <!-- 基本信息 -->
-        <div class="basic-info">
-          <div class="info-row">
-            <span class="info-label">上传时间:</span>
-            <span class="info-value">{{ formatDate(image.uploadedAt) }}</span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">文件大小:</span>
-            <span class="info-value">{{ formatFileSize(image.fileSize) }}</span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">分辨率:</span>
-            <span class="info-value">{{ image.width }} × {{ image.height }}</span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">格式:</span>
-            <span class="info-value">{{ getFileExtension() }}</span>
-          </div>
-        </div>
-
-        <!-- 标签 -->
-        <div class="tags-section" v-if="image.tags && image.tags.size > 0">
-          <h3>标签</h3>
-          <div class="tags-container">
-            <el-tag
-                v-for="tag in image.tags"
-                :key="tag"
-                type="info"
-                size="large"
-                class="tag-item"
-            >
-              {{ tag }}
-            </el-tag>
-          </div>
-        </div>
-
-        <!-- 描述 -->
-        <div class="description-section" v-if="image.description">
-          <h3>描述</h3>
-          <p class="description">{{ image.description }}</p>
-        </div>
-
-        <!-- 详细信息面板 -->
-        <el-collapse-transition>
-          <div class="detail-panel" v-show="showInfoPanel">
-            <!-- EXIF信息 -->
-            <div class="exif-section" v-if="hasExifInfo">
-              <h3>EXIF 信息</h3>
-              <div class="info-grid">
-                <div class="info-item" v-if="image.cameraMake || image.cameraModel">
-                  <span class="item-label">相机:</span>
-                  <span class="item-value">{{ image.cameraMake }} {{ image.cameraModel }}</span>
-                </div>
-                <div class="info-item" v-if="image.takenAt">
-                  <span class="item-label">拍摄时间:</span>
-                  <span class="item-value">{{ formatDate(image.takenAt) }}</span>
-                </div>
-                <div class="info-item" v-if="image.exposureTime">
-                  <span class="item-label">曝光时间:</span>
-                  <span class="item-value">{{ image.exposureTime }}</span>
-                </div>
-                <div class="info-item" v-if="image.fNumber">
-                  <span class="item-label">光圈:</span>
-                  <span class="item-value">{{ image.fNumber }}</span>
-                </div>
-                <div class="info-item" v-if="image.isoSpeed">
-                  <span class="item-label">ISO:</span>
-                  <span class="item-value">{{ image.isoSpeed }}</span>
-                </div>
-                <div class="info-item" v-if="image.focalLength">
-                  <span class="item-label">焦距:</span>
-                  <span class="item-value">{{ image.focalLength }}</span>
-                </div>
-              </div>
+      <div class="image-info-section">
+        <el-card class="info-card">
+          <template #header>
+            <div class="card-header">
+              <span>图片信息</span>
             </div>
-
-            <!-- 位置信息 -->
-            <div class="location-section" v-if="image.latitude && image.longitude">
-              <h3>拍摄位置</h3>
-              <div class="location-info">
-                <el-icon><Location /></el-icon>
-                <span>纬度: {{ image.latitude.toFixed(6) }}, 经度: {{ image.longitude.toFixed(6) }}</span>
-                <el-button type="text" @click="openInMaps" class="map-link">
-                  在地图中查看
-                </el-button>
-              </div>
-            </div>
-
-            <!-- 文件信息 -->
-            <div class="file-section">
-              <h3>文件信息</h3>
-              <div class="info-grid">
-                <div class="info-item">
-                  <span class="item-label">原始文件名:</span>
-                  <span class="item-value">{{ image.originalFilename }}</span>
-                </div>
-                <div class="info-item">
-                  <span class="item-label">MIME 类型:</span>
-                  <span class="item-value">{{ image.mimeType }}</span>
-                </div>
-                <div class="info-item">
-                  <span class="item-label">存储路径:</span>
-                  <span class="item-value file-path">{{ image.filePath }}</span>
-                </div>
-              </div>
-            </div>
+          </template>
+          
+          <div class="info-item" v-if="image">
+            <label>标题:</label>
+            <el-input v-model="image.title" @change="markAsEditing" v-if="isEditing" />
+            <span v-else>{{ image.title || '未设置' }}</span>
           </div>
-        </el-collapse-transition>
-      </div>
-    </div>
-
-    <!-- 编辑对话框 -->
-    <el-dialog
-        v-model="editDialogVisible"
-        title="编辑图片信息"
-        width="500px"
-        @closed="resetEditForm"
-    >
-      <el-form
-          ref="editFormRef"
-          :model="editForm"
-          :rules="editRules"
-          label-width="80px"
-      >
-        <el-form-item label="标题" prop="title">
-          <el-input
-              v-model="editForm.title"
-              placeholder="请输入图片标题"
-          />
-        </el-form-item>
-
-        <el-form-item label="描述" prop="description">
-          <el-input
-              v-model="editForm.description"
-              type="textarea"
-              :rows="4"
-              placeholder="请输入图片描述"
-          />
-        </el-form-item>
-
-        <el-form-item label="标签" prop="tags">
-          <el-select
-              v-model="editForm.tags"
+          
+          <div class="info-item">
+            <label>描述:</label>
+            <el-input 
+              v-model="image.description" 
+              type="textarea" 
+              :rows="3" 
+              @change="markAsEditing"
+              v-if="isEditing" 
+            />
+            <p v-else>{{ image.description || '未设置' }}</p>
+          </div>
+          
+          <div class="info-item">
+            <label>标签:</label>
+            <el-select
+              v-model="image.tags"
               multiple
               filterable
               allow-create
               default-first-option
-              placeholder="请输入标签"
-              style="width: 100%"
-          >
-            <el-option
-                v-for="tag in availableTags"
+              placeholder="添加或选择标签"
+              @change="markAsEditing"
+              v-if="isEditing"
+            >
+              <el-option
+                v-for="tag in allTags"
                 :key="tag"
                 :label="tag"
                 :value="tag"
-            />
-          </el-select>
-        </el-form-item>
-      </el-form>
+              />
+            </el-select>
+            <div v-else class="tags-display">
+              <el-tag 
+                v-for="tag in image.tags" 
+                :key="tag" 
+                size="small" 
+                style="margin-right: 8px; margin-bottom: 4px;"
+              >
+                {{ tag }}
+              </el-tag>
+              <span v-if="!image.tags || image.tags.length === 0">无标签</span>
+            </div>
+          </div>
+        </el-card>
 
-      <template #footer>
-        <el-button @click="editDialogVisible = false">取消</el-button>
-        <el-button
-            type="primary"
-            @click="saveEdit"
-            :loading="saving"
-        >
-          保存
-        </el-button>
-      </template>
-    </el-dialog>
+        <!-- EXIF信息卡片 -->
+        <el-card class="info-card" v-if="exifInfo">
+          <template #header>
+            <div class="card-header">
+              <span>EXIF信息</span>
+            </div>
+          </template>
+          
+          <div class="info-item" v-if="exifInfo.DateTime">
+            <label>拍摄时间:</label>
+            <span>{{ formatDate(exifInfo.DateTime) }}</span>
+          </div>
+          
+          <div class="info-item" v-if="exifInfo.Make || exifInfo.Model">
+            <label>设备:</label>
+            <span>{{ exifInfo.Make }} {{ exifInfo.Model }}</span>
+          </div>
+          
+          <div class="info-item" v-if="exifInfo.FNumber">
+            <label>光圈:</label>
+            <span>f/{{ exifInfo.FNumber }}</span>
+          </div>
+          
+          <div class="info-item" v-if="exifInfo.ExposureTime">
+            <label>快门:</label>
+            <span>1/{{ Math.round(1/exifInfo.ExposureTime) }}s</span>
+          </div>
+          
+          <div class="info-item" v-if="exifInfo.ISO">
+            <label>ISO:</label>
+            <span>{{ exifInfo.ISO }}</span>
+          </div>
+          
+          <div class="info-item" v-if="exifInfo.FocalLength">
+            <label>焦距:</label>
+            <span>{{ exifInfo.FocalLength }}mm</span>
+          </div>
+          
+          <div class="info-item" v-if="exifInfo.GPSLatitude && exifInfo.GPSLongitude">
+            <label>位置:</label>
+            <span>纬度: {{ exifInfo.GPSLatitude }}, 经度: {{ exifInfo.GPSLongitude }}</span>
+          </div>
+        </el-card>
+
+        <!-- 文件信息卡片 -->
+        <el-card class="info-card">
+          <template #header>
+            <div class="card-header">
+              <span>文件信息</span>
+            </div>
+          </template>
+          
+          <div class="info-item" v-if="image">
+            <label>文件名:</label>
+            <span>{{ image.originalFilename }}</span>
+          </div>
+          
+          <div class="info-item">
+            <label>文件大小:</label>
+            <span>{{ formatFileSize(image?.fileSize) }}</span>
+          </div>
+          
+          <div class="info-item">
+            <label>上传时间:</label>
+            <span>{{ image ? formatDate(image.uploadedAt) : '' }}</span>
+          </div>
+          
+          <div class="info-item">
+            <label>分辨率:</label>
+            <span v-if="image">{{ image.width }} × {{ image.height }}</span>
+          </div>
+        </el-card>
+
+        <!-- 操作按钮 -->
+        <div class="action-buttons">
+          <el-button @click="toggleEdit" :type="isEditing ? 'warning' : 'primary'" :icon="isEditing ? 'Close' : 'Edit'">
+            {{ isEditing ? '取消编辑' : '编辑信息' }}
+          </el-button>
+          <el-button @click="generateTagsFromExif" icon="MagicStick" plain>
+            从EXIF生成标签
+          </el-button>
+          <el-button @click="downloadImage" icon="Download" type="success">
+            下载原图
+          </el-button>
+          <el-button @click="deleteImage" icon="Delete" type="danger">
+            删除图片
+          </el-button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { ref, computed, onMounted, nextTick } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import { useUserStore } from '../stores/userStore'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import {
-  ArrowLeft,
-  Download,
-  Edit,
-  Delete,
-  ArrowUp,
-  ArrowDown,
-  Location
-} from '@element-plus/icons-vue'
-import { useUserStore } from '@/stores/userStore'
-import type { ImageResponseDTO } from '@/types/image'
-import { formatDate, formatFileSize } from '@/utils/formatters'
+import { formatDate, formatFileSize } from '../utils/formatters'
+import type { ImageResponseDTO } from '../types/image'
+import axios from 'axios'
 
-const route = useRoute()
 const router = useRouter()
+const route = useRoute()
 const userStore = useUserStore()
 
 // 数据
 const image = ref<ImageResponseDTO | null>(null)
 const imageSrc = ref('')
-const loading = ref(true)
+const exifInfo = ref<any>(null)
+const allTags = ref<string[]>([])
 const saving = ref(false)
-const showInfoPanel = ref(false)
-const availableTags = ref<string[]>([])
+const isEditing = ref(false)
+const originalData = ref<ImageResponseDTO | null>(null)
 
-// 编辑相关
-const editDialogVisible = ref(false)
-const editForm = ref({
-  title: '',
-  description: '',
-  tags: [] as string[]
+// 编辑设置
+const editSettings = ref({
+  brightness: 0,
+  contrast: 0,
+  saturation: 0
 })
-
-const editRules = {
-  title: [
-    { required: true, message: '请输入标题', trigger: 'blur' },
-    { max: 100, message: '标题不能超过100个字符', trigger: 'blur' }
-  ]
-}
 
 // 计算属性
 const userId = computed(() => userStore.user?.id)
-const imageId = computed(() => parseInt(route.params.id as string))
+const imageId = computed(() => Number(route.params.id))
 
-const hasExifInfo = computed(() => {
-  return image.value?.cameraMake ||
-      image.value?.cameraModel ||
-      image.value?.takenAt ||
-      image.value?.exposureTime ||
-      image.value?.fNumber ||
-      image.value?.isoSpeed ||
-      image.value?.focalLength
-})
-
-// 方法
-const getImageUrl = async () => {
-  if (!image.value) return ''
-  
-  try {
-    // 使用axios获取图片blob
-    const token = userStore.token;
-    const response = await axios.get(`/api/images/${image.value.id}/file`, {
-      params: {
-        token: token
-      },
-      responseType: 'blob'  // 指定响应类型为blob
-    })
-    
-    // 创建blob URL
-    const blob = new Blob([response.data], { type: response.data.type })
-    return URL.createObjectURL(blob)
-  } catch (error) {
-    console.error('获取图片失败:', error)
-    return ''
-  }
-}
-
-const getFileExtension = () => {
-  if (!image.value) return ''
-  const filename = image.value.originalFilename || ''
-  return filename.substring(filename.lastIndexOf('.') + 1).toUpperCase()
-}
-
+// 获取图片详细信息
 const loadImage = async () => {
-  if (!userId.value) return
+  if (!userId.value || !imageId.value) return
 
-  loading.value = true
   try {
     const response = await axios.get(`/api/images/${imageId.value}`, {
       params: {
@@ -322,146 +233,262 @@ const loadImage = async () => {
       }
     })
     image.value = response.data
+    originalData.value = JSON.parse(JSON.stringify(response.data)) // 保存原始数据副本
     
     // 加载图片源
-    imageSrc.value = await getImageUrl()
+    await loadOriginalImage()
+    
+    // 加载EXIF信息
+    await loadExifInfo()
+    
+    // 加载所有标签
+    await loadAllTags()
   } catch (error) {
     console.error('加载图片失败:', error)
     ElMessage.error('加载图片失败')
     router.push('/gallery')
-  } finally {
-    loading.value = false
   }
 }
 
-const loadTags = async () => {
+// 加载原始图片
+const loadOriginalImage = async () => {
   try {
-    const response = await fetch(`/api/images/tags?userId=${userId.value}`)
-    availableTags.value = await response.json()
+    const token = userStore.token
+    const response = await axios.get(`/api/images/${imageId.value}/file`, {
+      params: {
+        token: token
+      },
+      responseType: 'blob'
+    })
+    
+    const blob = new Blob([response.data], { type: response.data.type })
+    imageSrc.value = URL.createObjectURL(blob)
+  } catch (error) {
+    console.error('加载图片失败:', error)
+  }
+}
+
+// 加载EXIF信息
+const loadExifInfo = async () => {
+  try {
+    const response = await axios.get(`/api/images/${imageId.value}/exif`, {
+      params: {
+        userId: userId.value
+      }
+    })
+    exifInfo.value = response.data
+  } catch (error) {
+    console.error('加载EXIF信息失败:', error)
+    // EXIF信息是可选的，即使加载失败也不影响主要功能
+  }
+}
+
+// 加载所有标签
+const loadAllTags = async () => {
+  try {
+    const response = await axios.get(`/api/images/tags`, {
+      params: {
+        userId: userId.value
+      }
+    })
+    allTags.value = response.data
   } catch (error) {
     console.error('加载标签失败:', error)
   }
 }
 
-const goBack = () => {
-  router.push('/gallery')
-}
-
-const downloadImage = async () => {
-  if (!image.value) return
-
-  try {
-    const token = userStore.token;
-    const response = await axios.get(`/api/images/${image.value.id}/file`, {
-      params: {
-        token: token
-      },
-      responseType: 'blob'
-    });
-    
-    const blob = response.data;
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = image.value.title || image.value.originalFilename;
-    document.body.appendChild(a);
-    a.click();
-    window.URL.revokeObjectURL(url);
-    document.body.removeChild(a);
-
-    ElMessage.success('开始下载')
-  } catch (error) {
-    ElMessage.error('下载失败')
-  }
-}
-
-const editImage = () => {
-  if (!image.value) return
-
-  editForm.value = {
-    title: image.value.title || '',
-    description: image.value.description || '',
-    tags: Array.from(image.value.tags || [])
-  }
-  editDialogVisible.value = true
-}
-
-const deleteImage = async () => {
-  try {
-    await ElMessageBox.confirm('确定要删除这张图片吗？此操作不可撤销。', '删除确认', {
-      type: 'warning',
-      confirmButtonText: '确定删除',
-      cancelButtonText: '取消'
-    })
-
-    const response = await fetch(`/api/images/${imageId.value}?userId=${userId.value}`, {
-      method: 'DELETE'
-    })
-
-    if (response.ok) {
-      ElMessage.success('图片已删除')
-      router.push('/gallery')
-    } else {
-      const error = await response.json()
-      ElMessage.error(error.message || '删除失败')
-    }
-  } catch (error) {
-    // 用户取消删除
-  }
-}
-
-const saveEdit = async () => {
-  if (!image.value) return
+// 保存更改
+const saveChanges = async () => {
+  if (!image.value || !userId.value) return
 
   saving.value = true
   try {
-    const response = await fetch(`/api/images/${image.value.id}?userId=${userId.value}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(editForm.value)
+    const response = await axios.put(`/api/images/${image.value.id}`, {
+      title: image.value.title,
+      description: image.value.description,
+      tags: image.value.tags
+    }, {
+      params: {
+        userId: userId.value
+      }
     })
 
-    if (response.ok) {
-      const updatedImage = await response.json()
-      image.value = updatedImage
-      editDialogVisible.value = false
-      ElMessage.success('图片信息已更新')
+    if (response.status === 200) {
+      ElMessage.success('更改已保存')
+      isEditing.value = false
+      originalData.value = JSON.parse(JSON.stringify(image.value)) // 更新原始数据副本
     } else {
-      const error = await response.json()
-      ElMessage.error(error.message || '更新失败')
+      ElMessage.error('保存失败')
     }
   } catch (error) {
-    ElMessage.error('更新失败')
+    console.error('保存失败:', error)
+    ElMessage.error('保存失败')
   } finally {
     saving.value = false
   }
 }
 
-const resetEditForm = () => {
-  editForm.value = {
-    title: '',
-    description: '',
-    tags: []
+// 标记为正在编辑
+const markAsEditing = () => {
+  isEditing.value = true
+}
+
+// 切换编辑模式
+const toggleEdit = () => {
+  if (isEditing.value) {
+    // 取消编辑，恢复原始数据
+    if (image.value && originalData.value) {
+      image.value.title = originalData.value.title
+      image.value.description = originalData.value.description
+      image.value.tags = [...originalData.value.tags || []]
+    }
+  }
+  isEditing.value = !isEditing.value
+}
+
+// 从EXIF信息生成标签
+const generateTagsFromExif = () => {
+  if (!exifInfo.value || !image.value) return
+
+  const newTags: string[] = []
+
+  // 根据设备信息生成标签
+  if (exifInfo.value.Make) {
+    newTags.push(exifInfo.value.Make)
+  }
+  if (exifInfo.value.Model) {
+    newTags.push(exifInfo.value.Model)
+  }
+
+  // 根据拍摄时间生成标签
+  if (exifInfo.value.DateTime) {
+    const date = new Date(exifInfo.value.DateTime)
+    newTags.push(`${date.getFullYear()}年`)
+    newTags.push(`第${Math.ceil(date.getMonth()/3)+1}季度`)
+  }
+
+  // 根据光圈值生成标签
+  if (exifInfo.value.FNumber) {
+    if (exifInfo.value.FNumber < 2.8) {
+      newTags.push('大光圈')
+    } else if (exifInfo.value.FNumber > 8) {
+      newTags.push('小光圈')
+    }
+  }
+
+  // 根据ISO值生成标签
+  if (exifInfo.value.ISO) {
+    if (exifInfo.value.ISO > 1600) {
+      newTags.push('高ISO')
+    } else if (exifInfo.value.ISO < 400) {
+      newTags.push('低ISO')
+    }
+  }
+
+  // 根据焦距生成标签
+  if (exifInfo.value.FocalLength) {
+    if (exifInfo.value.FocalLength < 35) {
+      newTags.push('广角')
+    } else if (exifInfo.value.FocalLength > 100) {
+      newTags.push('长焦')
+    }
+  }
+
+  // 添加到现有标签中，避免重复
+  if (image.value.tags) {
+    newTags.forEach(tag => {
+      if (!image.value?.tags.includes(tag)) {
+        image.value?.tags.push(tag)
+      }
+    })
+  } else {
+    image.value.tags = newTags
+  }
+
+  isEditing.value = true
+  ElMessage.success('已根据EXIF信息生成标签')
+}
+
+// 应用滤镜效果
+const applyFilters = () => {
+  const img = document.querySelector('.main-image') as HTMLImageElement
+  if (img) {
+    img.style.filter = `brightness(${100 + editSettings.value.brightness}%) 
+                       contrast(${100 + editSettings.value.contrast}%) 
+                       saturate(${100 + editSettings.value.saturation}%)`
   }
 }
 
-const toggleInfoPanel = () => {
-  showInfoPanel.value = !showInfoPanel.value
+// 重置滤镜
+const resetFilters = () => {
+  editSettings.value = {
+    brightness: 0,
+    contrast: 0,
+    saturation: 0
+  }
+  applyFilters()
 }
 
-const openInMaps = () => {
-  if (image.value?.latitude && image.value?.longitude) {
-    const url = `https://maps.google.com/?q=${image.value.latitude},${image.value.longitude}`
-    window.open(url, '_blank')
+// 下载图片
+const downloadImage = async () => {
+  try {
+    const token = userStore.token
+    const response = await axios.get(`/api/images/${imageId.value}/file`, {
+      params: {
+        token: token
+      },
+      responseType: 'blob'
+    })
+
+    const url = window.URL.createObjectURL(new Blob([response.data]))
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', image.value?.originalFilename || `image-${imageId.value}`)
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.URL.revokeObjectURL(url)
+    
+    ElMessage.success('开始下载')
+  } catch (error) {
+    console.error('下载失败:', error)
+    ElMessage.error('下载失败')
   }
 }
 
-// 生命周期
+// 删除图片
+const deleteImage = async () => {
+  try {
+    await ElMessageBox.confirm('确定要删除这张图片吗？此操作不可撤销。', '删除确认', {
+      confirmButtonText: '确定删除',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+
+    const response = await axios.delete(`/api/images/${imageId.value}`, {
+      params: {
+        userId: userId.value
+      }
+    })
+
+    if (response.status === 200) {
+      ElMessage.success('图片已删除')
+      router.push('/gallery')
+    } else {
+      ElMessage.error('删除失败')
+    }
+  } catch (error) {
+    console.error('删除失败:', error)
+  }
+}
+
+// 返回上一页
+const goBack = () => {
+  router.go(-1)
+}
+
 onMounted(() => {
   loadImage()
-  loadTags()
 })
 </script>
 
@@ -472,232 +499,128 @@ onMounted(() => {
   margin: 0 auto;
 }
 
-.back-button {
-  margin-bottom: 24px;
-}
-
-.image-content {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 48px;
-  background: white;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-}
-
-.image-display {
-  position: relative;
-  background: #f5f7fa;
-  min-height: 600px;
+.image-detail-header {
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 24px;
-}
-
-.image-wrapper {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  max-height: 700px;
-  overflow: hidden;
-  border-radius: 8px;
-}
-
-.main-image {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  transition: transform 0.3s;
-}
-
-.image-wrapper:hover .main-image {
-  transform: scale(1.02);
-}
-
-.image-overlay {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: 24px;
-  background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
-  opacity: 0;
-  transition: opacity 0.3s;
-}
-
-.image-wrapper:hover .image-overlay {
-  opacity: 1;
-}
-
-.image-toolbar {
-  display: flex;
-  justify-content: center;
-}
-
-.image-info {
-  padding: 48px 32px;
-  overflow-y: auto;
-  max-height: 800px;
-}
-
-.info-header {
-  display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 32px;
+  margin-bottom: 24px;
   padding-bottom: 16px;
-  border-bottom: 1px solid #e4e7ed;
+  border-bottom: 1px solid #eee;
 }
 
 .image-title {
   margin: 0;
-  font-size: 28px;
-  font-weight: 600;
+  font-size: 24px;
   color: #303133;
-  line-height: 1.4;
 }
 
-.basic-info {
-  margin-bottom: 32px;
+.image-detail-content {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
 }
 
-.info-row {
+.image-preview-section {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 24px;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  margin-bottom: 12px;
 }
 
-.info-label {
-  width: 100px;
-  color: #909399;
-  font-size: 14px;
-}
-
-.info-value {
-  flex: 1;
-  color: #303133;
-  font-weight: 500;
-}
-
-.tags-section,
-.description-section {
-  margin-bottom: 32px;
-}
-
-.tags-section h3,
-.description-section h3 {
-  font-size: 16px;
-  font-weight: 600;
-  color: #303133;
-  margin: 0 0 12px 0;
-}
-
-.tags-container {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.tag-item {
-  font-size: 14px;
-  padding: 6px 12px;
-}
-
-.description {
-  margin: 0;
-  line-height: 1.6;
-  color: #606266;
-  white-space: pre-wrap;
-}
-
-.detail-panel {
-  margin-top: 32px;
-  padding-top: 32px;
-  border-top: 1px solid #e4e7ed;
-}
-
-.exif-section,
-.location-section,
-.file-section {
+.image-display {
+  width: 100%;
+  text-align: center;
   margin-bottom: 24px;
 }
 
-.exif-section h3,
-.location-section h3,
-.file-section h3 {
-  font-size: 16px;
-  font-weight: 600;
-  color: #303133;
-  margin: 0 0 16px 0;
+.main-image {
+  max-width: 100%;
+  max-height: 70vh;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-.info-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 16px;
+.image-placeholder {
+  height: 400px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f5f5f5;
+  border-radius: 8px;
+  color: #999;
+}
+
+.editing-tools {
+  width: 100%;
+  padding: 16px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.tool-group {
+  margin: 16px 0;
+}
+
+.tool-item {
+  margin-bottom: 16px;
+}
+
+.tool-item label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.info-card {
+  margin-bottom: 24px;
+}
+
+.card-header {
+  font-weight: 600;
+  font-size: 16px;
 }
 
 .info-item {
-  display: flex;
-  flex-direction: column;
+  margin-bottom: 16px;
 }
 
-.item-label {
-  font-size: 12px;
-  color: #909399;
+.info-item label {
+  display: block;
+  font-weight: 500;
+  color: #666;
   margin-bottom: 4px;
 }
 
-.item-value {
-  font-size: 14px;
-  color: #303133;
-  font-weight: 500;
-  word-break: break-all;
+.info-item span,
+.info-item p {
+  color: #333;
 }
 
-.file-path {
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-  font-size: 12px;
-  color: #67c23a;
-  background: #f0f9eb;
-  padding: 4px 8px;
-  border-radius: 4px;
-}
-
-.location-info {
+.tags-display {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #606266;
+  flex-wrap: wrap;
 }
 
-.map-link {
-  margin-left: auto;
-}
-
-@media (max-width: 1024px) {
-  .image-content {
-    grid-template-columns: 1fr;
-  }
-
-  .image-display {
-    min-height: 400px;
-  }
-
-  .image-info {
-    max-height: none;
-  }
+.action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 24px;
 }
 
 @media (max-width: 768px) {
-  .image-title {
-    font-size: 22px;
-  }
-
-  .info-grid {
+  .image-detail-content {
     grid-template-columns: 1fr;
+  }
+  
+  .image-detail-header {
+    flex-direction: column;
+    gap: 16px;
+    text-align: center;
   }
 }
 </style>

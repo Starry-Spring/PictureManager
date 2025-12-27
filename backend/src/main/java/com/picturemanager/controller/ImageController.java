@@ -66,9 +66,12 @@ public class ImageController {
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "20") int size,
             @RequestParam(value = "sortBy", defaultValue = "uploadedAt") String sortBy,
-            @RequestParam(value = "direction", defaultValue = "desc") String direction) {
+            @RequestParam(value = "direction", defaultValue = "desc") String direction,
+            @RequestParam(value = "keyword", required = false) String keyword,
+            @RequestParam(value = "searchType", required = false) String searchType,
+            @RequestParam(value = "tag", required = false) String tag) {
 
-        PaginatedResponse<ImageResponseDTO> response = imageService.getUserImages(userId, page, size, sortBy, direction);
+        PaginatedResponse<ImageResponseDTO> response = imageService.getUserImages(userId, page, size, sortBy, direction, keyword, searchType, tag);
         return ResponseEntity.ok(response);
     }
 
@@ -244,5 +247,31 @@ public class ImageController {
     public ResponseEntity<List<String>> getUserTags(@RequestParam("userId") Long userId) {
         List<String> tags = imageService.getUserTags(userId);
         return ResponseEntity.ok(tags);
+    }
+    
+    @GetMapping("/{id}/exif")
+    public ResponseEntity<?> getImageExif(
+            @PathVariable Long id,
+            @RequestParam("userId") Long userId) {
+        try {
+            ImageResponseDTO response = imageService.getImageById(userId, id);
+            // 返回包含EXIF信息的响应
+            Map<String, Object> exifData = new HashMap<>();
+            exifData.put("DateTime", response.getTakenAt());
+            exifData.put("Make", response.getCameraMake());
+            exifData.put("Model", response.getCameraModel());
+            exifData.put("ExposureTime", response.getExposureTime());
+            exifData.put("FNumber", response.getFNumber());
+            exifData.put("ISO", response.getIsoSpeed());
+            exifData.put("FocalLength", response.getFocalLength());
+            exifData.put("GPSLatitude", response.getLatitude());
+            exifData.put("GPSLongitude", response.getLongitude());
+            
+            return ResponseEntity.ok(exifData);
+        } catch (RuntimeException e) {
+            Map<String, String> error = new HashMap<>();
+            error.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+        }
     }
 }

@@ -415,17 +415,16 @@ const saveImageEdit = async () => {
       }
     })
 
-    if (response.ok) {
+    if (response.status === 200) {
       ElMessage.success('图片信息已更新')
       editDialogVisible.value = false
       loadImages()
       loadRecentImages()
     } else {
-      const error = await response.json()
-      ElMessage.error(error.message || '更新失败')
+      ElMessage.error('更新失败')
     }
-  } catch (error) {
-    ElMessage.error('更新失败')
+  } catch (error: any) {
+    ElMessage.error(error.response?.data?.message || '更新失败')
   } finally {
     saving.value = false
   }
@@ -445,16 +444,18 @@ const handleDelete = async (imageId: number) => {
       }
     })
 
-    if (response.ok) {
+    if (response.status === 200) {
       ElMessage.success('图片已删除')
       loadImages()
       loadRecentImages()
     } else {
-      const error = await response.json()
-      ElMessage.error(error.message || '删除失败')
+      ElMessage.error('删除失败')
     }
-  } catch (error) {
-    // 用户取消删除
+  } catch (error: any) {
+    // 用户取消删除或发生错误
+    if (error !== 'cancel' && error.response) {
+      ElMessage.error(error.response?.data?.message || '删除失败')
+    }
   }
 }
 

@@ -234,7 +234,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useUserStore } from '@/stores/userStore'
+import { useUserStore } from '../stores/userStore'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   Message,
@@ -243,7 +243,7 @@ import {
   Delete,
   Warning
 } from '@element-plus/icons-vue'
-import { formatDate, formatFileSize } from '@/utils/formatters'
+import { formatDate, formatFileSize } from '../utils/formatters'
 
 const userStore = useUserStore()
 

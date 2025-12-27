@@ -30,6 +30,23 @@ public interface ImageRepository extends JpaRepository<Image, Long> {
     @Query("SELECT i FROM Image i WHERE i.user = :user AND i.isDeleted = false AND " +
             "(i.title LIKE %:keyword% OR i.description LIKE %:keyword%)")
     Page<Image> searchByUser(@Param("user") User user, @Param("keyword") String keyword, Pageable pageable);
+    
+    // 按标题搜索
+    @Query("SELECT i FROM Image i WHERE i.user = :user AND i.isDeleted = false AND i.title LIKE %:keyword%")
+    Page<Image> searchByTitle(@Param("user") User user, @Param("keyword") String keyword, Pageable pageable);
+    
+    // 按描述搜索
+    @Query("SELECT i FROM Image i WHERE i.user = :user AND i.isDeleted = false AND i.description LIKE %:keyword%")
+    Page<Image> searchByDescription(@Param("user") User user, @Param("keyword") String keyword, Pageable pageable);
+    
+    // 按标签名搜索
+    @Query("SELECT DISTINCT i FROM Image i JOIN i.tags t WHERE i.user = :user AND i.isDeleted = false AND t.name LIKE %:keyword%")
+    Page<Image> searchByTagName(@Param("user") User user, @Param("keyword") String keyword, Pageable pageable);
+    
+    // 全局搜索（标题、描述、标签）
+    @Query("SELECT DISTINCT i FROM Image i LEFT JOIN i.tags t WHERE i.user = :user AND i.isDeleted = false AND " +
+            "(i.title LIKE %:keyword% OR i.description LIKE %:keyword% OR t.name LIKE %:keyword%)")
+    Page<Image> searchAll(@Param("user") User user, @Param("keyword") String keyword, Pageable pageable);
 
     // 按时间范围查找
     Page<Image> findByUserAndIsDeletedFalseAndUploadedAtBetween(User user, LocalDateTime start, LocalDateTime end, Pageable pageable);
