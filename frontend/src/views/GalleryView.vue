@@ -4,9 +4,15 @@
     <!-- 搜索和上传区域 -->
     <div class="gallery-header">
       <div class="search-box">
+        <el-select v-model="searchType" placeholder="搜索类型" style="width: 120px; margin-right: 10px;">
+          <el-option label="全部" value="all"></el-option>
+          <el-option label="标题" value="title"></el-option>
+          <el-option label="描述" value="description"></el-option>
+          <el-option label="标签" value="tag"></el-option>
+        </el-select>
         <el-input
             v-model="searchKeyword"
-            placeholder="搜索图片标题或描述..."
+            :placeholder="getSearchPlaceholder"
             clearable
             @clear="handleSearch"
             @keyup.enter="handleSearch"
@@ -214,8 +220,8 @@
 </template>
 
 <script setup lang="ts">
-import {ref, onMounted, computed, inject} from 'vue'
-import {useRouter} from 'vue-router'
+import {ref, onMounted, computed, inject, watch} from 'vue'
+import {useRouter, useRoute} from 'vue-router'
 import {useUserStore} from '../stores/userStore'
 import {ElMessage, ElMessageBox} from 'element-plus'
 import {
@@ -229,6 +235,7 @@ import {formatDate, formatFileSize} from '../utils/formatters'
 import axios from "axios";
 
 const router = useRouter()
+const route = useRoute()  // 添加 route 引用
 const userStore = useUserStore()
 
 // 数据
@@ -240,6 +247,7 @@ const saving = ref(false)
 
 // 搜索和过滤
 const searchKeyword = ref('')
+const searchType = ref('all')  // 添加搜索类型
 const activeTag = ref('')
 
 // 分页
@@ -268,12 +276,26 @@ const editingImage = ref<{
 // 计算属性
 const userId = computed(() => userStore.user?.id)
 
-// 获取图片URL
+// 获取图片URL - 使用axios获取blob并创建Object URL
 const getImageUrl = (image: ImageResponseDTO) => {
-  // 这里需要根据实际的后端文件服务地址来构建URL
+  // 使用token参数访问图片
   const token = userStore.token;
   return `/api/images/${image.id}/file?token=${token}`
 }
+
+// 获取搜索框提示文本
+const getSearchPlaceholder = computed(() => {
+  switch (searchType.value) {
+    case 'title':
+      return '搜索图片标题...'
+    case 'description':
+      return '搜索图片描述...'
+    case 'tag':
+      return '搜索图片标签...'
+    default:
+      return '搜索图片标题、描述或标签...'
+  }
+})
 
 // 加载数据
 const loadRecentImages = async () => {
@@ -318,6 +340,7 @@ const loadImages = async () => {
 
     if (searchKeyword.value) {
       params['keyword'] = encodeURIComponent(searchKeyword.value)
+      params['searchType'] = searchType.value  // 添加搜索类型参数
     }
     if (activeTag.value) {
       params['tag'] = encodeURIComponent(activeTag.value)
@@ -435,11 +458,24 @@ const handleDelete = async (imageId: number) => {
   }
 }
 
-// 生命周期
+// 初始化时从URL参数中获取搜索关键词
 onMounted(() => {
+  // 从路由参数中获取搜索关键词
+  if (route.query.keyword) {
+    searchKeyword.value = route.query.keyword as string
+  }
   loadRecentImages()
   loadTags()
   loadImages()
+})
+
+// 监听路由参数变化
+watch(() => route.query.keyword, (newKeyword) => {
+  if (newKeyword !== searchKeyword.value) {
+    searchKeyword.value = newKeyword as string
+    currentPage.value = 1  // 重置到第一页
+    loadImages()
+  }
 })
 </script>
 

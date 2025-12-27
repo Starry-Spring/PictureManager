@@ -24,15 +24,6 @@
       </div>
 
       <div class="header-right">
-        <el-input
-            v-model="searchKeyword"
-            placeholder="搜索图片..."
-            class="search-input"
-            size="small"
-            :prefix-icon="Search"
-            @keyup.enter="handleSearch"
-        />
-
         <el-dropdown @command="handleUserCommand" trigger="click">
           <div class="user-info">
             <el-avatar :size="32" :src="userStore.user?.avatarUrl" class="user-avatar">
@@ -44,14 +35,6 @@
 
           <template #dropdown>
             <el-dropdown-menu>
-              <el-dropdown-item command="user">
-                <el-icon><User /></el-icon>
-                个人中心
-              </el-dropdown-item>
-              <el-dropdown-item command="settings">
-                <el-icon><Setting /></el-icon>
-                设置
-              </el-dropdown-item>
               <el-dropdown-item divided command="logout">
                 <el-icon><SwitchButton /></el-icon>
                 退出登录
@@ -64,9 +47,9 @@
 
     <!-- 主内容区 -->
     <main class="main-content">
-      <router-view v-slot="{ Component }">
+      <router-view v-slot="{ Component, route }">
         <transition name="fade" mode="out-in">
-          <component :is="Component" />
+          <component :is="Component" :key="route.path" @openUploadDialog="showUploadDialog = true" />
         </transition>
       </router-view>
     </main>
@@ -89,22 +72,21 @@
         title="上传图片"
         width="500px"
         @close="handleUploadClose"
+        :before-close="handleDialogClose"
     >
-      <UploadImageForm @success="handleUploadSuccess" />
+      <UploadImageForm @success="handleUploadSuccess" @cancel="showUploadDialog = false" />
     </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, provide } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../stores/userStore'
 import {
   Picture,
   MagicStick,
-  Search,
   User,
-  Setting,
   SwitchButton,
   ArrowDown,
   Plus
@@ -114,15 +96,15 @@ import UploadImageForm from '../components/UploadImageForm.vue'
 const router = useRouter()
 const userStore = useUserStore()
 
-const searchKeyword = ref('')
 const showUploadDialog = ref(false)
 
-const handleSearch = () => {
-  if (searchKeyword.value.trim()) {
-    // 跳转到搜索页面或执行搜索
-    console.log('搜索:', searchKeyword.value)
-  }
+// 提供打开上传对话框的方法给子组件
+const openUploadDialog = () => {
+  showUploadDialog.value = true
 }
+
+// 提供方法给子组件
+provide('openUploadDialog', openUploadDialog)
 
 const handleUserCommand = (command: string) => {
   switch (command) {
@@ -134,17 +116,30 @@ const handleUserCommand = (command: string) => {
       break
     case 'logout':
       userStore.logout()
+      router.push('/login')
       break
   }
 }
 
 const handleUploadSuccess = () => {
   showUploadDialog.value = false
-  // 刷新图片列表
+  // 刷新图片列表，可以触发当前页面的刷新
+  if (router.currentRoute.value.path === '/gallery') {
+    // 在gallery页面，可以触发刷新事件
+    window.location.reload()
+  } else {
+    // 跳转到图片库页面查看新上传的图片
+    router.push('/gallery')
+  }
 }
 
 const handleUploadClose = () => {
   // 清理上传状态
+}
+
+const handleDialogClose = (done: () => void) => {
+  // 上传对话框关闭时的确认处理
+  done()
 }
 </script>
 
