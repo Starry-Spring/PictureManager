@@ -26,6 +26,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.imageio.ImageIO;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -126,6 +128,10 @@ public class ImageService {
         // 提取EXIF信息
         extractExifInfo(image, targetLocation.toFile());
 
+        // 生成缩略图
+        String thumbnailPath = generateThumbnail(targetLocation.toString(), storedFilename, user.getId());
+        image.setThumbnailPath(thumbnailPath);
+
         // 保存图片
         Image savedImage = imageRepository.save(image);
 
@@ -178,6 +184,62 @@ public class ImageService {
 
         } catch (Exception e) {
             // 如果没有EXIF信息，静默失败
+        }
+    }
+
+    /**
+     * 生成缩略图
+     */
+    private String generateThumbnail(String originalPath, String storedFilename, Long userId) {
+        try {
+            // 创建缩略图目录
+            String thumbnailDir = fileStorageProperties.getThumbnailDir() + File.separator + userId;
+            Path thumbnailDirPath = Paths.get(thumbnailDir);
+            if (!Files.exists(thumbnailDirPath)) {
+                Files.createDirectories(thumbnailDirPath);
+            }
+
+            // 读取原图
+            File originalFile = new File(originalPath);
+            BufferedImage originalImage = ImageIO.read(originalFile);
+            
+            if (originalImage == null) {
+                return null;
+            }
+
+            int originalWidth = originalImage.getWidth();
+            int originalHeight = originalImage.getHeight();
+            int thumbnailWidth = fileStorageProperties.getThumbnailWidth();
+
+            // 计算缩略图尺寸（保持纵横比）
+            int thumbnailHeight = (int) ((double) originalHeight / originalWidth * thumbnailWidth);
+
+            // 创建缩略图
+            BufferedImage thumbnailImage = new BufferedImage(thumbnailWidth, thumbnailHeight, BufferedImage.TYPE_INT_RGB);
+            Graphics2D g2d = thumbnailImage.createGraphics();
+            g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+            g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+            g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2d.drawImage(originalImage, 0, 0, thumbnailWidth, thumbnailHeight, null);
+            g2d.dispose();
+
+            // 保存缩略图
+            String thumbnailFilename = "thumb_" + storedFilename;
+            Path thumbnailPath = thumbnailDirPath.resolve(thumbnailFilename);
+            
+            // 获取格式名
+            String formatName = storedFilename.substring(storedFilename.lastIndexOf(".") + 1).toLowerCase();
+            if (formatName.equals("jpg")) {
+                formatName = "jpeg";
+            }
+            
+            ImageIO.write(thumbnailImage, formatName, thumbnailPath.toFile());
+
+            return thumbnailPath.toString();
+        } catch (Exception e) {
+            // 缩略图生成失败不影响主流程
+            e.printStackTrace();
+            return null;
         }
     }
 
@@ -354,6 +416,7 @@ public class ImageService {
         dto.setMimeType(image.getMimeType());
         dto.setWidth(image.getImageWidth());
         dto.setHeight(image.getImageHeight());
+        dto.setThumbnailPath(image.getThumbnailPath());
         dto.setUploadedAt(image.getUploadedAt());
 
         // 标签

@@ -35,6 +35,9 @@ public class Image {
     @Column(name = "file_path", nullable = false, length = 500)
     private String filePath;
 
+    @Column(name = "thumbnail_path", length = 500)
+    private String thumbnailPath;
+
     @Column(name = "file_size", nullable = false)
     private Long fileSize;
 
@@ -192,5 +195,13 @@ public class Image {
 
     public void setExif(ImageExif exif) {
         this.exif = exif;
+    }
+
+    public String getThumbnailPath() {
+        return thumbnailPath;
+    }
+
+    public void setThumbnailPath(String thumbnailPath) {
+        this.thumbnailPath = thumbnailPath;
     }
 }

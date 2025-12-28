@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "app.file")
 public class FileStorageProperties {
     private String uploadDir = "./uploads";
+    private String thumbnailDir = "./uploads/thumbnails";
     private int thumbnailWidth = 300;
     private String allowedTypes = "image/jpeg,image/png,image/gif,image/webp";
 
@@ -20,6 +21,14 @@ public class FileStorageProperties {
 
     public void setUploadDir(String uploadDir) {
         this.uploadDir = uploadDir;
+    }
+
+    public String getThumbnailDir() {
+        return thumbnailDir;
+    }
+
+    public void setThumbnailDir(String thumbnailDir) {
+        this.thumbnailDir = thumbnailDir;
     }
 
     public String getAllowedTypes() {

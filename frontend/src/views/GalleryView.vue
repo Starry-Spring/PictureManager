@@ -109,7 +109,7 @@
             @click="viewImageDetail(image.id)"
         >
           <div class="image-container">
-            <img :src="getImageUrl(image)" :alt="image.title"/>
+            <img :src="getThumbnailUrl(image)" :alt="image.title"/>
             <div class="image-overlay">
               <div class="image-actions">
                 <el-button
@@ -276,11 +276,41 @@ const editingImage = ref<{
 // 计算属性
 const userId = computed(() => userStore.user?.id)
 
-// 获取图片URL - 使用axios获取blob并创建Object URL
+// 图片URL缓存 - 存储imageId到URL的映射
+const imageUrlMap = ref<Map<number, string>>(new Map())
+
+// 获取图片URL - 从缓存中获取
 const getImageUrl = (image: ImageResponseDTO) => {
-  // 使用token参数访问图片
-  const token = userStore.token;
-  return `/api/images/${image.id}/file?token=${token}`
+  return imageUrlMap.value.get(image.id) || ''
+}
+
+// 获取缩略图URL - 从缓存中获取
+const getThumbnailUrl = (image: ImageResponseDTO) => {
+  const cacheKey = image.id + 1000000
+  return imageUrlMap.value.get(cacheKey) || ''
+}
+
+// 加载单张图片到缓存
+const loadImageToCache = async (imageId: number, isThumbnail: boolean = false) => {
+  const cacheKey = isThumbnail ? imageId + 1000000 : imageId
+  
+  if (imageUrlMap.value.has(cacheKey)) {
+    return
+  }
+  
+  try {
+    const token = userStore.token
+    const endpoint = isThumbnail ? `/api/images/${imageId}/thumbnail` : `/api/images/${imageId}/file`
+    const response = await axios.get(endpoint, {
+      params: { token },
+      responseType: 'blob'
+    })
+    const blob = new Blob([response.data], { type: response.data.type })
+    const url = URL.createObjectURL(blob)
+    imageUrlMap.value.set(cacheKey, url)
+  } catch (error) {
+    console.error(`加载${isThumbnail ? '缩略' : ''}图片失败:`, error)
+  }
 }
 
 // 获取搜索框提示文本
@@ -307,6 +337,11 @@ const loadRecentImages = async () => {
       }
     })
     recentImages.value = response.data
+    
+    // 预加载轮播图片
+    for (const img of recentImages.value) {
+      loadImageToCache(img.id, false)
+    }
   } catch (error) {
     console.error('加载最近图片失败:', error)
   }
@@ -330,7 +365,7 @@ const loadImages = async () => {
 
   loading.value = true
   try {
-    const params = {
+    const params: Record<string, any> = {
       userId: userId.value,
       page: currentPage.value - 1,
       size: pageSize.value,
@@ -340,7 +375,7 @@ const loadImages = async () => {
 
     if (searchKeyword.value) {
       params['keyword'] = encodeURIComponent(searchKeyword.value)
-      params['searchType'] = searchType.value  // 添加搜索类型参数
+      params['searchType'] = searchType.value
     }
     if (activeTag.value) {
       params['tag'] = encodeURIComponent(activeTag.value)
@@ -352,6 +387,11 @@ const loadImages = async () => {
     images.value = data.content
     totalElements.value = data.totalElements
     totalPages.value = data.totalPages
+    
+    // 预加载缩略图
+    for (const img of images.value) {
+      loadImageToCache(img.id, true)
+    }
   } catch (error) {
     console.error('加载图片失败:', error)
     ElMessage.error('加载图片失败')

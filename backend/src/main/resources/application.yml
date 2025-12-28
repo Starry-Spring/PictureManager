@@ -45,8 +45,15 @@ app:
 
   file:
     upload-dir: ./uploads
+    thumbnail-dir: ./uploads/thumbnails
     thumbnail-width: 300
     allowed-types: image/jpeg,image/png,image/gif,image/webp
+
+  # DeepSeek AI 配置
+  deepseek:
+    api-key: sk-e24743d0d4a44cf5817b2cb8ba850e3c
+    api-url: https://api.deepseek.com/v1/chat/completions
+    model: deepseek-chat
 
 # 日志配置
 logging:

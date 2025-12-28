@@ -96,18 +96,8 @@ public class ImageController {
             @RequestParam("userId") Long userId) {
         try {
             ImageResponseDTO image = imageService.getImageById(userId, id);
-            System.out.println("=== 图片访问调试信息 (userId方式) ===");
-            System.out.println("图片ID: " + id);
-            System.out.println("用户ID: " + userId);
-            System.out.println("文件路径: " + image.getFilePath());
-            System.out.println("存储文件名: " + image.getStoredFilename());
-            System.out.println("MIME类型: " + image.getMimeType());
             
             Path imagePath = Paths.get(image.getFilePath());
-            System.out.println("解析的路径: " + imagePath.toString());
-            System.out.println("文件是否存在: " + Files.exists(imagePath));
-            System.out.println("文件是否可读: " + Files.isReadable(imagePath));
-            System.out.println("===================");
             
             Resource resource = new UrlResource(imagePath.toUri());
             
@@ -120,16 +110,40 @@ public class ImageController {
                 return ResponseEntity.notFound().build();
             }
         } catch (RuntimeException e) {
-            Map<String, String> error = new HashMap<>();
-            error.put("message", e.getMessage());
-            System.out.println("运行时异常: " + e.getMessage());
-            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         } catch (Exception e) {
-            Map<String, String> error = new HashMap<>();
-            error.put("message", e.getMessage());
-            System.out.println("其他异常: " + e.getMessage());
-            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @GetMapping("/{id}/thumbnail")
+    public ResponseEntity<Resource> getThumbnailFile(
+            @PathVariable Long id,
+            @RequestParam("userId") Long userId) {
+        try {
+            ImageResponseDTO image = imageService.getImageById(userId, id);
+            
+            String thumbnailPath = image.getThumbnailPath();
+            if (thumbnailPath == null || thumbnailPath.isEmpty()) {
+                // 没有缩略图，返回原图
+                return getImageFile(id, userId);
+            }
+            
+            Path thumbPath = Paths.get(thumbnailPath);
+            Resource resource = new UrlResource(thumbPath.toUri());
+            
+            if (resource.exists() && resource.isReadable()) {
+                return ResponseEntity.ok()
+                        .contentType(MediaType.parseMediaType(image.getMimeType()))
+                        .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"thumb_" + image.getStoredFilename() + "\"")
+                        .body(resource);
+            } else {
+                // 缩略图不存在，返回原图
+                return getImageFile(id, userId);
+            }
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
@@ -192,6 +206,61 @@ public class ImageController {
             error.put("message", e.getMessage());
             System.out.println("其他异常: " + e.getMessage());
             e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+    
+    @GetMapping(value = "/{id}/thumbnail", params = "token")
+    public ResponseEntity<Resource> getThumbnailFileWithToken(
+            @PathVariable Long id,
+            @RequestParam("token") String token) {
+        try {
+            String username = jwtTokenProvider.getUsernameFromToken(token);
+            
+            if (!jwtTokenProvider.validateToken(token)) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            }
+            
+            Optional<User> userOptional = userRepository.findByUsername(username);
+            if (userOptional.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            }
+            
+            Long userId = userOptional.get().getId();
+            ImageResponseDTO image = imageService.getImageById(userId, id);
+            
+            String thumbnailPath = image.getThumbnailPath();
+            if (thumbnailPath == null || thumbnailPath.isEmpty()) {
+                Path imagePath = Paths.get(image.getFilePath());
+                Resource resource = new UrlResource(imagePath.toUri());
+                if (resource.exists() && resource.isReadable()) {
+                    return ResponseEntity.ok()
+                            .contentType(MediaType.parseMediaType(image.getMimeType()))
+                            .body(resource);
+                }
+                return ResponseEntity.notFound().build();
+            }
+            
+            Path thumbPath = Paths.get(thumbnailPath);
+            Resource resource = new UrlResource(thumbPath.toUri());
+            
+            if (resource.exists() && resource.isReadable()) {
+                return ResponseEntity.ok()
+                        .contentType(MediaType.parseMediaType(image.getMimeType()))
+                        .body(resource);
+            } else {
+                Path imagePath = Paths.get(image.getFilePath());
+                Resource originalResource = new UrlResource(imagePath.toUri());
+                if (originalResource.exists() && originalResource.isReadable()) {
+                    return ResponseEntity.ok()
+                            .contentType(MediaType.parseMediaType(image.getMimeType()))
+                            .body(originalResource);
+                }
+                return ResponseEntity.notFound().build();
+            }
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }

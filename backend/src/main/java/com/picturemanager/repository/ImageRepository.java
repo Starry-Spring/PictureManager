@@ -54,4 +54,8 @@ public interface ImageRepository extends JpaRepository<Image, Long> {
     // 查找最新图片（用于轮播）
     @Query("SELECT i FROM Image i WHERE i.user = :user AND i.isDeleted = false ORDER BY i.uploadedAt DESC")
     List<Image> findRecentImages(@Param("user") User user, Pageable pageable);
+
+    // 根据用户ID查找未删除的图片
+    @Query("SELECT i FROM Image i WHERE i.user.id = :userId AND i.isDeleted = false")
+    List<Image> findByUserIdAndIsDeletedFalse(@Param("userId") Long userId);
 }

@@ -20,6 +20,7 @@ public class ImageResponseDTO {
     private String mimeType;
     private Integer width;
     private Integer height;
+    private String thumbnailPath;
     private Set<String> tags;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
@@ -115,6 +116,14 @@ public class ImageResponseDTO {
 
     public void setHeight(Integer height) {
         this.height = height;
+    }
+
+    public String getThumbnailPath() {
+        return thumbnailPath;
+    }
+
+    public void setThumbnailPath(String thumbnailPath) {
+        this.thumbnailPath = thumbnailPath;
     }
 
     public Set<String> getTags() {
