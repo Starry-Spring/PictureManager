@@ -10,6 +10,7 @@ import com.drew.metadata.exif.GpsDirectory;
 import com.picturemanager.config.FileStorageProperties;
 import com.picturemanager.dto.ImageDTO;
 import com.picturemanager.dto.ImageResponseDTO;
+import com.picturemanager.dto.ImageUpdateDTO;
 import com.picturemanager.dto.PaginatedResponse;
 import com.picturemanager.entity.*;
 import com.picturemanager.repository.ImageRepository;
@@ -269,7 +270,7 @@ public class ImageService {
     }
 
     @Transactional
-    public ImageResponseDTO updateImage(Long userId, Long imageId, ImageDTO imageDTO) {
+    public ImageResponseDTO updateImage(Long userId, Long imageId, ImageUpdateDTO imageUpdateDTO) {
         Image image = imageRepository.findById(imageId)
                 .orElseThrow(() -> new RuntimeException("图片不存在"));
 
@@ -277,15 +278,19 @@ public class ImageService {
             throw new RuntimeException("无权更新此图片");
         }
 
-        image.setTitle(imageDTO.getTitle());
-        image.setDescription(imageDTO.getDescription());
+        if (imageUpdateDTO.getTitle() != null) {
+            image.setTitle(imageUpdateDTO.getTitle());
+        }
+        if (imageUpdateDTO.getDescription() != null) {
+            image.setDescription(imageUpdateDTO.getDescription());
+        }
 
         // 更新标签
-        if (imageDTO.getTags() != null) {
+        if (imageUpdateDTO.getTags() != null) {
             Set<Tag> tags = new HashSet<>();
             User user = userRepository.findById(userId).orElseThrow();
 
-            for (String tagName : imageDTO.getTags()) {
+            for (String tagName : imageUpdateDTO.getTags()) {
                 Tag tag = tagRepository.findByNameAndCreatedBy(tagName, user)
                         .orElseGet(() -> {
                             Tag newTag = new Tag();
@@ -297,6 +302,15 @@ public class ImageService {
                 tags.add(tag);
             }
             image.setTags(tags);
+        }
+        
+        // 处理图片裁剪
+        if (imageUpdateDTO.getCropLeft() != null || imageUpdateDTO.getCropTop() != null) {
+            try {
+                cropImage(image, imageUpdateDTO.getCropLeft(), imageUpdateDTO.getCropTop());
+            } catch (IOException e) {
+                throw new RuntimeException("图片裁剪失败: " + e.getMessage());
+            }
         }
 
         Image updatedImage = imageRepository.save(image);
@@ -365,5 +379,60 @@ public class ImageService {
         }
 
         return dto;
+    }
+
+    /**
+     * 裁剪图片
+     * @param image 图片实体
+     * @param cropLeft 从左边保留多少像素（负数表示从右边）
+     * @param cropTop 从上边保留多少像素（负数表示从下边）
+     */
+    private void cropImage(Image image, Integer cropLeft, Integer cropTop) throws IOException {
+        File imageFile = new File(image.getFilePath());
+        BufferedImage originalImage = ImageIO.read(imageFile);
+        
+        int originalWidth = originalImage.getWidth();
+        int originalHeight = originalImage.getHeight();
+        
+        // 计算裁剪区域
+        int x = 0, y = 0;
+        int width = originalWidth;
+        int height = originalHeight;
+        
+        if (cropLeft != null) {
+            if (cropLeft > 0) {
+                // 从左到右保留 cropLeft 像素
+                width = Math.min(cropLeft, originalWidth);
+            } else if (cropLeft < 0) {
+                // 从右到左保留 -cropLeft 像素
+                int keepWidth = Math.min(-cropLeft, originalWidth);
+                x = originalWidth - keepWidth;
+                width = keepWidth;
+            }
+        }
+        
+        if (cropTop != null) {
+            if (cropTop > 0) {
+                // 从上到下保留 cropTop 像素
+                height = Math.min(cropTop, originalHeight);
+            } else if (cropTop < 0) {
+                // 从下到上保留 -cropTop 像素
+                int keepHeight = Math.min(-cropTop, originalHeight);
+                y = originalHeight - keepHeight;
+                height = keepHeight;
+            }
+        }
+        
+        // 执行裁剪
+        BufferedImage croppedImage = originalImage.getSubimage(x, y, width, height);
+        
+        // 保存裁剪后的图片，覆盖原文件
+        String formatName = image.getMimeType().substring(image.getMimeType().lastIndexOf("/") + 1);
+        ImageIO.write(croppedImage, formatName, imageFile);
+        
+        // 更新图片尺寸和文件大小
+        image.setImageWidth(width);
+        image.setImageHeight(height);
+        image.setFileSize(imageFile.length());
     }
 }

@@ -11,8 +11,19 @@
     <div class="image-detail-content">
       <div class="image-preview-section">
         <div class="image-display">
-          <img :src="imageSrc" :alt="image?.title" class="main-image" v-if="imageSrc" />
+          <div class="crop-preview-container" :style="cropContainerStyle" v-if="imageSrc">
+            <img 
+              :src="imageSrc" 
+              :alt="image?.title" 
+              class="main-image" 
+              ref="mainImageRef"
+              :style="cropImageStyle"
+            />
+          </div>
           <div class="image-placeholder" v-else>图片加载中...</div>
+          <div class="crop-info" v-if="isEditing && hasCropSettings">
+            预览尺寸: {{ previewWidth }} × {{ previewHeight }}
+          </div>
         </div>
         
         <!-- 图片编辑工具栏 -->
@@ -33,7 +44,37 @@
             </div>
           </div>
           
-          <el-button @click="resetFilters" plain>重置</el-button>
+          <h3 style="margin-top: 20px;">裁剪设置</h3>
+          <div class="tool-group">
+            <div class="tool-item">
+              <label>宽度裁剪（像素）:</label>
+              <el-input-number 
+                v-model="editSettings.cropLeft" 
+                :min="-image.width" 
+                :max="image.width"
+                placeholder="正数:左→右 负数:右→左"
+                @change="applyCropPreview"
+              />
+              <span class="hint">正数从左到右保留，负数从右到左保留</span>
+            </div>
+            <div class="tool-item">
+              <label>高度裁剪（像素）:</label>
+              <el-input-number 
+                v-model="editSettings.cropTop" 
+                :min="-image.height" 
+                :max="image.height"
+                placeholder="正数:上→下 负数:下→上"
+                @change="applyCropPreview"
+              />
+              <span class="hint">正数从上到下保留，负数从下到上保留</span>
+            </div>
+            <div class="tool-item" v-if="image">
+              <span class="info-text">当前尺寸: {{ image.width }} × {{ image.height }}</span>
+            </div>
+          </div>
+          
+          <el-button @click="resetFilters" plain>重置滤镜</el-button>
+          <el-button @click="resetCrop" plain v-if="hasCropSettings">重置裁剪</el-button>
         </div>
       </div>
 
@@ -210,17 +251,126 @@ const allTags = ref<string[]>([])
 const saving = ref(false)
 const isEditing = ref(false)
 const originalData = ref<ImageResponseDTO | null>(null)
+const mainImageRef = ref<HTMLImageElement | null>(null)
 
 // 编辑设置
 const editSettings = ref({
   brightness: 0,
   contrast: 0,
-  saturation: 0
+  saturation: 0,
+  cropLeft: null as number | null,
+  cropTop: null as number | null
 })
 
 // 计算属性
 const userId = computed(() => userStore.user?.id)
 const imageId = computed(() => Number(route.params.id))
+
+// 是否有裁剪设置
+const hasCropSettings = computed(() => {
+  return editSettings.value.cropLeft !== null || editSettings.value.cropTop !== null
+})
+
+// 预览宽度
+const previewWidth = computed(() => {
+  if (!image.value) return 0
+  const cropLeft = editSettings.value.cropLeft
+  if (cropLeft === null) return image.value.width
+  if (cropLeft > 0) return Math.min(cropLeft, image.value.width)
+  return Math.min(-cropLeft, image.value.width)
+})
+
+// 预览高度
+const previewHeight = computed(() => {
+  if (!image.value) return 0
+  const cropTop = editSettings.value.cropTop
+  if (cropTop === null) return image.value.height
+  if (cropTop > 0) return Math.min(cropTop, image.value.height)
+  return Math.min(-cropTop, image.value.height)
+})
+
+// 裁剪容器样式
+const cropContainerStyle = computed(() => {
+  if (!image.value || !hasCropSettings.value) {
+    return {}
+  }
+  
+  // 计算显示比例（基于原始图片的宽高比）
+  const displayRatio = previewWidth.value / previewHeight.value
+  const maxWidth = 800
+  const maxHeight = 600
+  
+  let width, height
+  if (displayRatio > maxWidth / maxHeight) {
+    width = Math.min(previewWidth.value, maxWidth)
+    height = width / displayRatio
+  } else {
+    height = Math.min(previewHeight.value, maxHeight)
+    width = height * displayRatio
+  }
+  
+  return {
+    width: `${width}px`,
+    height: `${height}px`,
+    overflow: 'hidden',
+    position: 'relative',
+    border: '2px dashed #409EFF'
+  }
+})
+
+// 裁剪图片样式
+const cropImageStyle = computed(() => {
+  if (!image.value || !hasCropSettings.value) {
+    return {
+      filter: `brightness(${100 + editSettings.value.brightness}%) 
+               contrast(${100 + editSettings.value.contrast}%) 
+               saturate(${100 + editSettings.value.saturation}%)`
+    }
+  }
+  
+  const cropLeft = editSettings.value.cropLeft
+  const cropTop = editSettings.value.cropTop
+  const originalWidth = image.value.width
+  const originalHeight = image.value.height
+  
+  // 计算图片位置偏移
+  let left = 0
+  let top = 0
+  
+  // 计算宽度方向的偏移
+  if (cropLeft !== null && cropLeft < 0) {
+    // 从右到左保留，需要左移图片
+    const keepWidth = Math.min(-cropLeft, originalWidth)
+    left = -(originalWidth - keepWidth)
+  }
+  
+  // 计算高度方向的偏移
+  if (cropTop !== null && cropTop < 0) {
+    // 从下到上保留，需要上移图片
+    const keepHeight = Math.min(-cropTop, originalHeight)
+    top = -(originalHeight - keepHeight)
+  }
+  
+  // 计算缩放比例以适应容器
+  const containerWidth = parseFloat(cropContainerStyle.value.width as string) || previewWidth.value
+  const containerHeight = parseFloat(cropContainerStyle.value.height as string) || previewHeight.value
+  const scaleX = containerWidth / previewWidth.value
+  const scaleY = containerHeight / previewHeight.value
+  const scale = Math.min(scaleX, scaleY)
+  
+  return {
+    position: 'absolute',
+    left: `${left * scale}px`,
+    top: `${top * scale}px`,
+    width: `${originalWidth * scale}px`,
+    height: `${originalHeight * scale}px`,
+    maxWidth: 'none',
+    maxHeight: 'none',
+    filter: `brightness(${100 + editSettings.value.brightness}%) 
+             contrast(${100 + editSettings.value.contrast}%) 
+             saturate(${100 + editSettings.value.saturation}%)`
+  }
+})
 
 // 获取图片详细信息
 const loadImage = async () => {
@@ -303,11 +453,21 @@ const saveChanges = async () => {
 
   saving.value = true
   try {
-    const response = await axios.put(`/api/images/${image.value.id}`, {
+    const requestData: any = {
       title: image.value.title,
       description: image.value.description,
       tags: image.value.tags
-    }, {
+    }
+    
+    // 添加裁剪参数
+    if (editSettings.value.cropLeft !== null) {
+      requestData.cropLeft = editSettings.value.cropLeft
+    }
+    if (editSettings.value.cropTop !== null) {
+      requestData.cropTop = editSettings.value.cropTop
+    }
+
+    const response = await axios.put(`/api/images/${image.value.id}`, requestData, {
       params: {
         userId: userId.value
       }
@@ -316,7 +476,18 @@ const saveChanges = async () => {
     if (response.status === 200) {
       ElMessage.success('更改已保存')
       isEditing.value = false
-      originalData.value = JSON.parse(JSON.stringify(image.value)) // 更新原始数据副本
+      
+      // 重新加载图片数据
+      await loadImage()
+      
+      // 重置编辑设置
+      editSettings.value = {
+        brightness: 0,
+        contrast: 0,
+        saturation: 0,
+        cropLeft: null,
+        cropTop: null
+      }
     } else {
       ElMessage.error('保存失败')
     }
@@ -333,6 +504,18 @@ const markAsEditing = () => {
   isEditing.value = true
 }
 
+// 应用裁剪预览
+const applyCropPreview = () => {
+  markAsEditing()
+  // 裁剪预览通过计算属性自动更新
+}
+
+// 重置裁剪
+const resetCrop = () => {
+  editSettings.value.cropLeft = null
+  editSettings.value.cropTop = null
+}
+
 // 切换编辑模式
 const toggleEdit = () => {
   if (isEditing.value) {
@@ -342,6 +525,15 @@ const toggleEdit = () => {
       image.value.description = originalData.value.description
       image.value.tags = [...originalData.value.tags || []]
     }
+    // 重置编辑设置
+    editSettings.value = {
+      brightness: 0,
+      contrast: 0,
+      saturation: 0,
+      cropLeft: null,
+      cropTop: null
+    }
+    applyFilters()
   }
   isEditing.value = !isEditing.value
 }
@@ -421,11 +613,9 @@ const applyFilters = () => {
 
 // 重置滤镜
 const resetFilters = () => {
-  editSettings.value = {
-    brightness: 0,
-    contrast: 0,
-    saturation: 0
-  }
+  editSettings.value.brightness = 0
+  editSettings.value.contrast = 0
+  editSettings.value.saturation = 0
   applyFilters()
 }
 
@@ -543,6 +733,25 @@ watch(() => userStore.user, (newUser) => {
   width: 100%;
   text-align: center;
   margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.crop-preview-container {
+  display: inline-block;
+  background: #f5f5f5;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.crop-info {
+  margin-top: 8px;
+  padding: 4px 12px;
+  background: #409EFF;
+  color: white;
+  border-radius: 4px;
+  font-size: 12px;
 }
 
 .main-image {
@@ -583,6 +792,18 @@ watch(() => userStore.user, (newUser) => {
   display: block;
   margin-bottom: 8px;
   font-weight: 500;
+}
+
+.tool-item .hint {
+  display: block;
+  font-size: 12px;
+  color: #999;
+  margin-top: 4px;
+}
+
+.tool-item .info-text {
+  color: #666;
+  font-size: 14px;
 }
 
 .info-card {

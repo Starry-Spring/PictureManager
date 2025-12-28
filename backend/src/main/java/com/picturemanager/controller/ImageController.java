@@ -3,6 +3,7 @@ package com.picturemanager.controller;
 
 import com.picturemanager.dto.ImageDTO;
 import com.picturemanager.dto.ImageResponseDTO;
+import com.picturemanager.dto.ImageUpdateDTO;
 import com.picturemanager.dto.PaginatedResponse;
 import com.picturemanager.entity.User;
 import com.picturemanager.repository.UserRepository;
@@ -199,9 +200,9 @@ public class ImageController {
     public ResponseEntity<?> updateImage(
             @PathVariable Long id,
             @RequestParam("userId") Long userId,
-            @Valid @RequestBody ImageDTO imageDTO) {
+            @RequestBody ImageUpdateDTO imageUpdateDTO) {
         try {
-            ImageResponseDTO response = imageService.updateImage(userId, id, imageDTO);
+            ImageResponseDTO response = imageService.updateImage(userId, id, imageUpdateDTO);
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
             Map<String, String> error = new HashMap<>();

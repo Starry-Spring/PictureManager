@@ -311,6 +311,23 @@ const infoRules = {
   ]
 }
 
+// 密码验证函数（必须在passwordRules之前定义）
+const validateNewPassword = (rule: any, value: string, callback: Function) => {
+  if (value === passwordForm.value.currentPassword) {
+    callback(new Error('新密码不能与当前密码相同'))
+  } else {
+    callback()
+  }
+}
+
+const validateConfirmPassword = (rule: any, value: string, callback: Function) => {
+  if (value !== passwordForm.value.newPassword) {
+    callback(new Error('两次输入的密码不一致'))
+  } else {
+    callback()
+  }
+}
+
 const passwordRules = {
   currentPassword: [
     { required: true, message: '请输入当前密码', trigger: 'blur' },
@@ -366,22 +383,6 @@ const loadStatistics = async () => {
     monthUploads.value = 42
   } catch (error) {
     console.error('加载统计数据失败:', error)
-  }
-}
-
-const validateNewPassword = (rule: any, value: string, callback: Function) => {
-  if (value === passwordForm.value.currentPassword) {
-    callback(new Error('新密码不能与当前密码相同'))
-  } else {
-    callback()
-  }
-}
-
-const validateConfirmPassword = (rule: any, value: string, callback: Function) => {
-  if (value !== passwordForm.value.newPassword) {
-    callback(new Error('两次输入的密码不一致'))
-  } else {
-    callback()
   }
 }
 
@@ -458,12 +459,18 @@ const exportData = () => {
 }
 
 const clearCache = () => {
-  ElMessageBox.confirm('确定要清理本地缓存吗？这不会删除您的任何图片数据。', '清理缓存', {
+  ElMessageBox.confirm('确定要清理本地缓存吗？这不会删除您的任何图片数据，但会需要重新登录。', '清理缓存', {
     type: 'warning'
   }).then(() => {
+    // 保存token
+    const token = localStorage.getItem('token')
+    // 清理其他缓存
     localStorage.clear()
+    // 恢复token
+    if (token) {
+      localStorage.setItem('token', token)
+    }
     ElMessage.success('缓存已清理')
-    window.location.reload()
   })
 }
 

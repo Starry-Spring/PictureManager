@@ -1,38 +1,21 @@
-// src/main/java/com/picturemanager/dto/ImageDTO.java
+// src/main/java/com/picturemanager/dto/ImageUpdateDTO.java
 package com.picturemanager.dto;
 
 import lombok.Data;
-import org.springframework.web.multipart.MultipartFile;
-
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import java.util.Set;
 
 @Data
-public class ImageDTO {
+public class ImageUpdateDTO {
 
-    private Long id;
-
-    @NotBlank(message = "标题不能为空")
     private String title;
 
     private String description;
 
     private Set<String> tags;
 
-    private MultipartFile file;
-
     // 裁剪参数
     private Integer cropLeft;   // 从左边保留多少像素（负数表示从右边）
     private Integer cropTop;    // 从上边保留多少像素（负数表示从下边）
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
 
     public String getTitle() {
         return title;
@@ -56,14 +39,6 @@ public class ImageDTO {
 
     public void setTags(Set<String> tags) {
         this.tags = tags;
-    }
-
-    public MultipartFile getFile() {
-        return file;
-    }
-
-    public void setFile(MultipartFile file) {
-        this.file = file;
     }
 
     public Integer getCropLeft() {

@@ -60,16 +60,21 @@ const router = createRouter({
 router.beforeEach(async (to, from, next) => {
     const userStore = useUserStore()
     
-    // 如果尚未初始化认证状态，尝试初始化
+    // 确保认证状态已初始化（只会执行一次）
     if (!userStore.initialized) {
         await userStore.initializeAuth()
     }
 
-    if (to.meta.requiresAuth && !userStore.isAuthenticated) {
+    const requiresAuth = to.matched.some(record => record.meta.requiresAuth)
+    
+    if (requiresAuth && !userStore.isAuthenticated) {
+        // 需要认证但未登录，跳转到登录页
         next('/login')
     } else if ((to.name === 'Login' || to.name === 'Register') && userStore.isAuthenticated) {
+        // 已登录用户访问登录/注册页，跳转到图片库
         next('/gallery')
     } else {
+        // 正常放行
         next()
     }
 })
