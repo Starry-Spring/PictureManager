@@ -26,7 +26,7 @@
       <div class="header-right">
         <el-dropdown @command="handleUserCommand" trigger="click">
           <div class="user-info">
-            <el-avatar :size="32" :src="userStore.user?.avatarUrl" class="user-avatar">
+            <el-avatar :size="32" src="/avatar.png" class="user-avatar">
               {{ userStore.user?.username?.charAt(0)?.toUpperCase() }}
             </el-avatar>
             <span class="username">{{ userStore.user?.displayName || userStore.user?.username }}</span>
