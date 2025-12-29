@@ -407,28 +407,39 @@ const sendMessage = async () => {
   
   try {
     const userId = userStore.user?.id
-    const history = chatMessages.value.slice(-10).map(m => ({
-      role: m.role,
-      content: m.content
-    }))
+    if (!userId) {
+      chatMessages.value.push({
+        role: 'assistant',
+        content: '请先登录后再使用AI助手。'
+      })
+      return
+    }
     
     const response = await axios.post(`/api/ai/chat?userId=${userId}`, {
-      message,
-      history
+      message
     })
     
     const result = response.data
+    console.log('AI响应:', result)
+    
+    // 预加载搜索结果中的图片
+    if (result.hasSearch && result.searchResult?.images?.length) {
+      for (const img of result.searchResult.images) {
+        loadImageToCache(img.id, true)
+      }
+    }
     
     chatMessages.value.push({
       role: 'assistant',
-      content: result.message,
+      content: result.message || '收到响应但没有消息内容',
       searchResult: result.hasSearch ? result.searchResult : null
     })
     
   } catch (error: any) {
+    console.error('AI请求失败:', error)
     chatMessages.value.push({
       role: 'assistant',
-      content: '抱歉，我遇到了一些问题。请稍后重试。'
+      content: '抱歉，请求失败：' + (error.response?.data?.message || error.message || '未知错误')
     })
   } finally {
     chatLoading.value = false
@@ -439,8 +450,7 @@ const sendMessage = async () => {
 
 // 格式化消息
 const formatMessage = (content: string) => {
-  // 移除搜索标记
-  content = content.replace(/\[SEARCH:[^\]]+\]/g, '')
+  if (!content) return ''
   // 转换换行
   return content.replace(/\n/g, '<br>')
 }
