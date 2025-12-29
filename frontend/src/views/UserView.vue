@@ -443,20 +443,23 @@ const beforeAvatarUpload = (file: File) => {
 const saveInfo = async () => {
   try {
     savingInfo.value = true
-    // 模拟API调用
-    await new Promise(resolve => setTimeout(resolve, 1000))
-
-    userInfo.value.displayName = infoForm.value.displayName
-    userInfo.value.bio = infoForm.value.bio
-
+    
+    const response = await axios.put('/api/auth/profile', {
+      displayName: infoForm.value.displayName
+    }, {
+      params: { userId: userId.value }
+    })
+    
+    userInfo.value.displayName = response.data.displayName
+    
     // 更新 userStore
     if (userStore.user) {
-      userStore.user.displayName = infoForm.value.displayName
+      userStore.user.displayName = response.data.displayName
     }
 
     ElMessage.success('个人信息已更新')
-  } catch (error) {
-    ElMessage.error('更新失败')
+  } catch (error: any) {
+    ElMessage.error(error.response?.data?.message || '更新失败')
   } finally {
     savingInfo.value = false
   }
@@ -465,8 +468,13 @@ const saveInfo = async () => {
 const changePassword = async () => {
   try {
     changingPassword.value = true
-    // 模拟API调用
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    
+    await axios.post('/api/auth/change-password', {
+      currentPassword: passwordForm.value.currentPassword,
+      newPassword: passwordForm.value.newPassword
+    }, {
+      params: { userId: userId.value }
+    })
 
     passwordForm.value = {
       currentPassword: '',
@@ -475,8 +483,8 @@ const changePassword = async () => {
     }
 
     ElMessage.success('密码修改成功')
-  } catch (error) {
-    ElMessage.error('密码修改失败')
+  } catch (error: any) {
+    ElMessage.error(error.response?.data?.message || '密码修改失败')
   } finally {
     changingPassword.value = false
   }
