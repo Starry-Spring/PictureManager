@@ -210,11 +210,6 @@
 
             <h3>账户操作</h3>
             <div class="account-actions">
-              <el-button type="primary" plain @click="exportData">
-                <el-icon><Download /></el-icon>
-                导出数据
-              </el-button>
-
               <el-button type="warning" plain @click="clearCache">
                 <el-icon><Delete /></el-icon>
                 清理缓存
@@ -239,11 +234,11 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   Message,
   Monitor,
-  Download,
   Delete,
   Warning
 } from '@element-plus/icons-vue'
 import { formatDate, formatFileSize } from '../utils/formatters'
+import axios from 'axios'
 
 const userStore = useUserStore()
 
@@ -356,7 +351,7 @@ const loadUserInfo = async () => {
       email: userStore.user.email || '',
       displayName: userStore.user.displayName || userStore.user.username || '',
       avatarUrl: userStore.user.avatarUrl || '',
-      lastLoginAt: '',
+      lastLoginAt: new Date().toISOString(), // 使用当前时间作为本次登录时间
       bio: ''
     }
 
@@ -373,14 +368,49 @@ const loadUserInfo = async () => {
 
 const loadStatistics = async () => {
   try {
-    // 这里应该调用后端API获取统计数据
-    // 暂时使用模拟数据
-    imageCount.value = 42
-    tagCount.value = 8
-    usedStorage.value = 256 * 1024 * 1024 // 256MB
-    todayUploads.value = 3
-    weekUploads.value = 15
-    monthUploads.value = 42
+    const uid = userId.value
+    if (!uid) return
+    
+    // 获取图片列表以计算统计数据
+    const response = await axios.get('/api/images', {
+      params: { userId: uid, size: 1000 }
+    })
+    const images = response.data.content || []
+    
+    // 计算图片数
+    imageCount.value = response.data.totalElements || images.length
+    
+    // 计算标签数
+    const tagSet = new Set<string>()
+    let totalSize = 0
+    let today = 0
+    let week = 0
+    let month = 0
+    const now = new Date()
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const weekStart = new Date(todayStart.getTime() - 7 * 24 * 60 * 60 * 1000)
+    const monthStart = new Date(todayStart.getTime() - 30 * 24 * 60 * 60 * 1000)
+    
+    for (const img of images) {
+      if (img.tags) {
+        img.tags.forEach((tag: string) => tagSet.add(tag))
+      }
+      if (img.fileSize) {
+        totalSize += img.fileSize
+      }
+      if (img.uploadedAt) {
+        const uploadDate = new Date(img.uploadedAt)
+        if (uploadDate >= todayStart) today++
+        if (uploadDate >= weekStart) week++
+        if (uploadDate >= monthStart) month++
+      }
+    }
+    
+    tagCount.value = tagSet.size
+    usedStorage.value = totalSize
+    todayUploads.value = today
+    weekUploads.value = week
+    monthUploads.value = month
   } catch (error) {
     console.error('加载统计数据失败:', error)
   }
@@ -452,10 +482,6 @@ const changePassword = async () => {
   } finally {
     changingPassword.value = false
   }
-}
-
-const exportData = () => {
-  ElMessage.info('导出功能开发中...')
 }
 
 const clearCache = () => {

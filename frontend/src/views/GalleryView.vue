@@ -1,33 +1,8 @@
 <!-- src/views/GalleryView.vue -->
 <template>
   <div class="gallery-container">
-    <!-- 搜索和上传区域 -->
+    <!-- 上传按钮保持在顶部 -->
     <div class="gallery-header">
-      <div class="search-box">
-        <el-select v-model="searchType" placeholder="搜索类型" style="width: 120px; margin-right: 10px;">
-          <el-option label="全部" value="all"></el-option>
-          <el-option label="标题" value="title"></el-option>
-          <el-option label="描述" value="description"></el-option>
-          <el-option label="标签" value="tag"></el-option>
-        </el-select>
-        <el-input
-            v-model="searchKeyword"
-            :placeholder="getSearchPlaceholder"
-            clearable
-            @clear="handleSearch"
-            @keyup.enter="handleSearch"
-        >
-          <template #prefix>
-            <el-icon>
-              <Search/>
-            </el-icon>
-          </template>
-        </el-input>
-        <el-button type="primary" @click="handleSearch">
-          搜索
-        </el-button>
-      </div>
-
       <div class="actions">
         <el-button type="primary" @click="openUploadDialog">
           <el-icon>
@@ -77,6 +52,51 @@
           {{ activeTag ? `标签: ${activeTag}` : '所有图片' }}
           <span class="image-count">({{ totalElements }} 张)</span>
         </h2>
+
+        <!-- 搜索框移到这里 -->
+        <div class="search-box">
+          <el-select v-model="searchType" placeholder="搜索类型" style="width: 120px; margin-right: 10px;">
+            <el-option label="全部" value="all"></el-option>
+            <el-option label="标题" value="title"></el-option>
+            <el-option label="描述" value="description"></el-option>
+            <el-option label="标签" value="tag"></el-option>
+          </el-select>
+          <template v-if="searchType === 'tag'">
+            <el-select
+                v-model="searchKeyword"
+                placeholder="选择标签"
+                clearable
+                filterable
+                style="width: 200px; margin-right: 10px;"
+            >
+              <el-option
+                  v-for="tag in tags"
+                  :key="tag"
+                  :label="tag"
+                  :value="tag"
+              ></el-option>
+            </el-select>
+          </template>
+          <template v-else>
+            <el-input
+                v-model="searchKeyword"
+                :placeholder="getSearchPlaceholder"
+                clearable
+                @clear="handleSearch"
+                @keyup.enter="handleSearch"
+                style="width: 200px; margin-right: 10px;"
+            >
+              <template #prefix>
+                <el-icon>
+                  <Search/>
+                </el-icon>
+              </template>
+            </el-input>
+          </template>
+          <el-button type="primary" @click="handleSearch">
+            搜索
+          </el-button>
+        </div>
 
         <div class="sort-options">
           <el-select v-model="sortBy" @change="loadImages" placeholder="排序方式">
@@ -315,13 +335,15 @@ const loadImageToCache = async (imageId: number, isThumbnail: boolean = false) =
 
 // 获取搜索框提示文本
 const getSearchPlaceholder = computed(() => {
+  if (searchType.value === 'tag') {
+    return '选择标签...'
+  }
+  
   switch (searchType.value) {
     case 'title':
       return '搜索图片标题...'
     case 'description':
       return '搜索图片描述...'
-    case 'tag':
-      return '搜索图片标签...'
     default:
       return '搜索图片标题、描述或标签...'
   }
@@ -731,10 +753,26 @@ watch(() => route.query.keyword, (newKeyword) => {
   gap: 4px;
 }
 
-.pagination {
+.images-header {
   display: flex;
-  justify-content: center;
-  padding: 24px 0;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 300px;
+}
+
+.sort-options {
+  display: flex;
+  gap: 12px;
 }
 
 @media (max-width: 768px) {
@@ -743,8 +781,13 @@ watch(() => route.query.keyword, (newKeyword) => {
     align-items: stretch;
   }
 
+  .images-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
   .search-box {
-    max-width: none;
+    min-width: unset;
   }
 
   .images-grid {
