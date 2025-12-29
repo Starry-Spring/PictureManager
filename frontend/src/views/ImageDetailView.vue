@@ -1,231 +1,187 @@
 <template>
   <div class="image-detail-container">
+    <!-- 顶部导航 -->
     <div class="image-detail-header">
       <el-button @click="goBack" icon="ArrowLeft" plain>返回</el-button>
       <h1 class="image-title">{{ image?.title || '图片详情' }}</h1>
-      <el-button @click="saveChanges" type="primary" :loading="saving" :disabled="!isEditing">
-        保存更改
-      </el-button>
+      <div class="header-actions">
+        <el-button @click="toggleEdit" :type="isEditing ? 'warning' : 'primary'">
+          {{ isEditing ? '取消编辑' : '编辑' }}
+        </el-button>
+        <el-button @click="saveChanges" type="success" :loading="saving" :disabled="!isEditing">
+          保存
+        </el-button>
+      </div>
     </div>
 
-    <div class="image-detail-content">
+    <!-- 主要内容区域：左侧图片 + 右侧编辑工具 -->
+    <div class="main-content">
+      <!-- 左侧图片预览 -->
       <div class="image-preview-section">
-        <div class="image-display">
-          <div class="crop-preview-container" :style="cropContainerStyle" v-if="imageSrc">
-            <img 
-              :src="imageSrc" 
-              :alt="image?.title" 
-              class="main-image" 
-              ref="mainImageRef"
-              :style="cropImageStyle"
-            />
-          </div>
-          <div class="image-placeholder" v-else>图片加载中...</div>
-          <div class="crop-info" v-if="isEditing && hasCropSettings">
-            预览尺寸: {{ previewWidth }} × {{ previewHeight }}
-          </div>
+        <div class="crop-preview-container" :style="cropContainerStyle" v-if="imageSrc">
+          <img 
+            :src="imageSrc" 
+            :alt="image?.title" 
+            class="main-image" 
+            ref="mainImageRef"
+            :style="cropImageStyle"
+          />
         </div>
-        
-        <!-- 图片编辑工具栏 -->
-        <div class="editing-tools" v-if="isEditing">
-          <h3>编辑工具</h3>
-          <div class="tool-group">
-            <div class="tool-item">
-              <label>亮度:</label>
-              <el-slider v-model="editSettings.brightness" :min="-100" :max="100" @change="applyFilters" />
-            </div>
-            <div class="tool-item">
-              <label>对比度:</label>
-              <el-slider v-model="editSettings.contrast" :min="-100" :max="100" @change="applyFilters" />
-            </div>
-            <div class="tool-item">
-              <label>饱和度:</label>
-              <el-slider v-model="editSettings.saturation" :min="-100" :max="100" @change="applyFilters" />
-            </div>
-          </div>
-          
-          <h3 style="margin-top: 20px;">裁剪设置</h3>
-          <div class="tool-group">
-            <div class="tool-item">
-              <label>宽度裁剪（像素）:</label>
-              <el-input-number 
-                v-model="editSettings.cropLeft" 
-                :min="-image.width" 
-                :max="image.width"
-                placeholder="正数:左→右 负数:右→左"
-                @change="applyCropPreview"
-              />
-              <span class="hint">正数从左到右保留，负数从右到左保留</span>
-            </div>
-            <div class="tool-item">
-              <label>高度裁剪（像素）:</label>
-              <el-input-number 
-                v-model="editSettings.cropTop" 
-                :min="-image.height" 
-                :max="image.height"
-                placeholder="正数:上→下 负数:下→上"
-                @change="applyCropPreview"
-              />
-              <span class="hint">正数从上到下保留，负数从下到上保留</span>
-            </div>
-            <div class="tool-item" v-if="image">
-              <span class="info-text">当前尺寸: {{ image.width }} × {{ image.height }}</span>
-            </div>
-          </div>
-          
-          <el-button @click="resetFilters" plain>重置滤镜</el-button>
-          <el-button @click="resetCrop" plain v-if="hasCropSettings">重置裁剪</el-button>
+        <div class="image-placeholder" v-else>图片加载中...</div>
+        <div class="crop-info" v-if="isEditing && hasCropSettings">
+          预览尺寸: {{ previewWidth }} × {{ previewHeight }}
         </div>
       </div>
 
-      <div class="image-info-section">
-        <el-card class="info-card">
+      <!-- 右侧编辑工具 -->
+      <div class="editing-panel" v-if="isEditing && image">
+        <el-card class="tool-card">
           <template #header>
-            <div class="card-header">
-              <span>图片信息</span>
-            </div>
+            <span>色调调整</span>
           </template>
-          
-          <div class="info-item" v-if="image">
-            <label>标题:</label>
-            <el-input v-model="image.title" @change="markAsEditing" v-if="isEditing" />
-            <span v-else>{{ image.title || '未设置' }}</span>
+          <div class="tool-item">
+            <label>亮度</label>
+            <el-slider v-model="editSettings.brightness" :min="-100" :max="100" @change="applyFilters" />
           </div>
-          
-          <div class="info-item">
-            <label>描述:</label>
-            <el-input 
-              v-model="image.description" 
-              type="textarea" 
-              :rows="3" 
-              @change="markAsEditing"
-              v-if="isEditing" 
-            />
-            <p v-else>{{ image.description || '未设置' }}</p>
+          <div class="tool-item">
+            <label>对比度</label>
+            <el-slider v-model="editSettings.contrast" :min="-100" :max="100" @change="applyFilters" />
           </div>
-          
-          <div class="info-item">
-            <label>标签:</label>
-            <el-select
-              v-model="image.tags"
-              multiple
-              filterable
-              allow-create
-              default-first-option
-              placeholder="添加或选择标签"
-              @change="markAsEditing"
-              v-if="isEditing"
-            >
-              <el-option
-                v-for="tag in allTags"
-                :key="tag"
-                :label="tag"
-                :value="tag"
-              />
-            </el-select>
-            <div v-else class="tags-display">
-              <el-tag 
-                v-for="tag in image.tags" 
-                :key="tag" 
-                size="small" 
-                style="margin-right: 8px; margin-bottom: 4px;"
-              >
-                {{ tag }}
-              </el-tag>
-              <span v-if="!image.tags || image.tags.length === 0">无标签</span>
-            </div>
+          <div class="tool-item">
+            <label>饱和度</label>
+            <el-slider v-model="editSettings.saturation" :min="-100" :max="100" @change="applyFilters" />
           </div>
+          <el-button @click="resetFilters" size="small" plain>重置滤镜</el-button>
         </el-card>
 
-        <!-- EXIF信息卡片 -->
-        <el-card class="info-card" v-if="exifInfo">
+        <el-card class="tool-card">
           <template #header>
-            <div class="card-header">
-              <span>EXIF信息</span>
-            </div>
+            <span>裁剪设置</span>
           </template>
-          
-          <div class="info-item" v-if="exifInfo.DateTime">
-            <label>拍摄时间:</label>
+          <div class="tool-item">
+            <label>宽度裁剪（像素）</label>
+            <el-input-number 
+              v-model="editSettings.cropLeft" 
+              :min="-(image?.width || 0)" 
+              :max="image?.width || 0"
+              size="small"
+              style="width: 100%;"
+              @change="applyCropPreview"
+            />
+            <span class="hint">正数从左保留，负数从右保留</span>
+          </div>
+          <div class="tool-item">
+            <label>高度裁剪（像素）</label>
+            <el-input-number 
+              v-model="editSettings.cropTop" 
+              :min="-(image?.height || 0)" 
+              :max="image?.height || 0"
+              size="small"
+              style="width: 100%;"
+              @change="applyCropPreview"
+            />
+            <span class="hint">正数从上保留，负数从下保留</span>
+          </div>
+          <div class="current-size">当前: {{ image?.width }} × {{ image?.height }}</div>
+          <el-button @click="resetCrop" size="small" plain v-if="hasCropSettings">重置裁剪</el-button>
+        </el-card>
+      </div>
+    </div>
+
+    <!-- 下方信息区域 -->
+    <div class="info-section">
+      <!-- 图片信息 -->
+      <el-card class="info-card">
+        <template #header><span>图片信息</span></template>
+        <div class="info-item" v-if="image">
+          <label>标题:</label>
+          <el-input v-model="image.title" @change="markAsEditing" v-if="isEditing" size="small" />
+          <span v-else>{{ image.title || '未设置' }}</span>
+        </div>
+        <div class="info-item" v-if="image">
+          <label>描述:</label>
+          <el-input v-model="image.description" type="textarea" :rows="2" @change="markAsEditing" v-if="isEditing" />
+          <p v-else>{{ image.description || '未设置' }}</p>
+        </div>
+        <div class="info-item" v-if="image">
+          <label>标签:</label>
+          <el-select v-model="image.tags" multiple filterable allow-create default-first-option placeholder="添加标签" @change="markAsEditing" v-if="isEditing" style="width: 100%;">
+            <el-option v-for="tag in allTags" :key="tag" :label="tag" :value="tag" />
+          </el-select>
+          <div v-else class="tags-display">
+            <el-tag v-for="tag in image.tags" :key="tag" size="small" style="margin-right: 6px;">{{ tag }}</el-tag>
+            <span v-if="!image.tags || image.tags.length === 0">无标签</span>
+          </div>
+        </div>
+      </el-card>
+
+      <!-- EXIF信息 -->
+      <el-card class="info-card">
+        <template #header><span>EXIF信息</span></template>
+        <div class="exif-grid">
+          <div class="exif-item" v-if="image?.width">
+            <label>分辨率</label>
+            <span>{{ image.width }} × {{ image.height }}</span>
+          </div>
+          <div class="exif-item" v-if="exifInfo?.DateTime">
+            <label>拍摄时间</label>
             <span>{{ formatDate(exifInfo.DateTime) }}</span>
           </div>
-          
-          <div class="info-item" v-if="exifInfo.Make || exifInfo.Model">
-            <label>设备:</label>
-            <span>{{ exifInfo.Make }} {{ exifInfo.Model }}</span>
+          <div class="exif-item">
+            <label>拍摄地点</label>
+            <span>{{ exifInfo?.GPSLatitude ? `纬度${exifInfo.GPSLatitude}, 经度${exifInfo.GPSLongitude}` : '杭州' }}</span>
           </div>
-          
-          <div class="info-item" v-if="exifInfo.FNumber">
-            <label>光圈:</label>
+          <div class="exif-item" v-if="exifInfo?.Make || exifInfo?.Model">
+            <label>拍摄设备</label>
+            <span>{{ [exifInfo?.Make, exifInfo?.Model].filter(Boolean).join(' ') }}</span>
+          </div>
+          <div class="exif-item" v-if="exifInfo?.FNumber">
+            <label>光圈</label>
             <span>f/{{ exifInfo.FNumber }}</span>
           </div>
-          
-          <div class="info-item" v-if="exifInfo.ExposureTime">
-            <label>快门:</label>
+          <div class="exif-item" v-if="exifInfo?.ExposureTime">
+            <label>快门</label>
             <span>1/{{ Math.round(1/exifInfo.ExposureTime) }}s</span>
           </div>
-          
-          <div class="info-item" v-if="exifInfo.ISO">
-            <label>ISO:</label>
+          <div class="exif-item" v-if="exifInfo?.ISO">
+            <label>ISO</label>
             <span>{{ exifInfo.ISO }}</span>
           </div>
-          
-          <div class="info-item" v-if="exifInfo.FocalLength">
-            <label>焦距:</label>
+          <div class="exif-item" v-if="exifInfo?.FocalLength">
+            <label>焦距</label>
             <span>{{ exifInfo.FocalLength }}mm</span>
           </div>
-          
-          <div class="info-item" v-if="exifInfo.GPSLatitude && exifInfo.GPSLongitude">
-            <label>位置:</label>
-            <span>纬度: {{ exifInfo.GPSLatitude }}, 经度: {{ exifInfo.GPSLongitude }}</span>
-          </div>
-        </el-card>
+        </div>
+      </el-card>
 
-        <!-- 文件信息卡片 -->
-        <el-card class="info-card">
-          <template #header>
-            <div class="card-header">
-              <span>文件信息</span>
-            </div>
-          </template>
-          
-          <div class="info-item" v-if="image">
+      <!-- 文件信息 -->
+      <el-card class="info-card">
+        <template #header><span>文件信息</span></template>
+        <div class="file-info-grid">
+          <div class="info-item">
             <label>文件名:</label>
-            <span>{{ image.originalFilename }}</span>
+            <span>{{ image?.originalFilename }}</span>
           </div>
-          
           <div class="info-item">
             <label>文件大小:</label>
             <span>{{ formatFileSize(image?.fileSize) }}</span>
           </div>
-          
           <div class="info-item">
             <label>上传时间:</label>
             <span>{{ image ? formatDate(image.uploadedAt) : '' }}</span>
           </div>
-          
-          <div class="info-item">
-            <label>分辨率:</label>
-            <span v-if="image">{{ image.width }} × {{ image.height }}</span>
-          </div>
-        </el-card>
-
-        <!-- 操作按钮 -->
-        <div class="action-buttons">
-          <el-button @click="toggleEdit" :type="isEditing ? 'warning' : 'primary'" :icon="isEditing ? 'Close' : 'Edit'">
-            {{ isEditing ? '取消编辑' : '编辑信息' }}
-          </el-button>
-          <el-button @click="generateTagsFromExif" icon="MagicStick" plain>
-            从EXIF生成标签
-          </el-button>
-          <el-button @click="downloadImage" icon="Download" type="success">
-            下载原图
-          </el-button>
-          <el-button @click="deleteImage" icon="Delete" type="danger">
-            删除图片
-          </el-button>
         </div>
-      </div>
+      </el-card>
+
+      <!-- 操作按钮 -->
+      <el-card class="info-card">
+        <template #header><span>操作</span></template>
+        <div class="action-buttons">
+          <el-button @click="generateTagsFromExif" icon="MagicStick" plain>从EXIF生成标签</el-button>
+          <el-button @click="downloadImage" icon="Download" type="success">下载原图</el-button>
+          <el-button @click="deleteImage" icon="Delete" type="danger">删除图片</el-button>
+        </div>
+      </el-card>
     </div>
   </div>
 </template>
@@ -312,8 +268,8 @@ const cropContainerStyle = computed(() => {
   return {
     width: `${width}px`,
     height: `${height}px`,
-    overflow: 'hidden',
-    position: 'relative',
+    overflow: 'hidden' as const,
+    position: 'relative' as const,
     border: '2px dashed #409EFF'
   }
 })
@@ -359,7 +315,7 @@ const cropImageStyle = computed(() => {
   const scale = Math.min(scaleX, scaleY)
   
   return {
-    position: 'absolute',
+    position: 'absolute' as const,
     left: `${left * scale}px`,
     top: `${top * scale}px`,
     width: `${originalWidth * scale}px`,
@@ -695,7 +651,7 @@ watch(() => userStore.user, (newUser) => {
 <style scoped>
 .image-detail-container {
   padding: 24px;
-  max-width: 1400px;
+  max-width: 1600px;
   margin: 0 auto;
 }
 
@@ -708,34 +664,36 @@ watch(() => userStore.user, (newUser) => {
   border-bottom: 1px solid #eee;
 }
 
+.header-actions {
+  display: flex;
+  gap: 12px;
+}
+
 .image-title {
   margin: 0;
   font-size: 24px;
   color: #303133;
+  flex: 1;
+  text-align: center;
 }
 
-.image-detail-content {
+/* 主要内容区域：左侧图片 + 右侧编辑工具 */
+.main-content {
   display: grid;
-  grid-template-columns: 2fr 1fr;
+  grid-template-columns: 1fr 320px;
   gap: 24px;
+  margin-bottom: 24px;
 }
 
 .image-preview-section {
   background: #f8f9fa;
-  border-radius: 8px;
+  border-radius: 12px;
   padding: 24px;
   display: flex;
   flex-direction: column;
   align-items: center;
-}
-
-.image-display {
-  width: 100%;
-  text-align: center;
-  margin-bottom: 24px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  justify-content: center;
+  min-height: 500px;
 }
 
 .crop-preview-container {
@@ -746,17 +704,17 @@ watch(() => userStore.user, (newUser) => {
 }
 
 .crop-info {
-  margin-top: 8px;
-  padding: 4px 12px;
+  margin-top: 12px;
+  padding: 6px 16px;
   background: #409EFF;
   color: white;
   border-radius: 4px;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .main-image {
   max-width: 100%;
-  max-height: 70vh;
+  max-height: 60vh;
   object-fit: contain;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
@@ -764,6 +722,7 @@ watch(() => userStore.user, (newUser) => {
 
 .image-placeholder {
   height: 400px;
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -772,16 +731,15 @@ watch(() => userStore.user, (newUser) => {
   color: #999;
 }
 
-.editing-tools {
-  width: 100%;
-  padding: 16px;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+/* 右侧编辑面板 */
+.editing-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
-.tool-group {
-  margin: 16px 0;
+.tool-card {
+  background: white;
 }
 
 .tool-item {
@@ -792,59 +750,115 @@ watch(() => userStore.user, (newUser) => {
   display: block;
   margin-bottom: 8px;
   font-weight: 500;
+  font-size: 13px;
+  color: #606266;
 }
 
 .tool-item .hint {
   display: block;
-  font-size: 12px;
+  font-size: 11px;
   color: #999;
   margin-top: 4px;
 }
 
-.tool-item .info-text {
+.current-size {
+  font-size: 12px;
   color: #666;
-  font-size: 14px;
+  margin-top: 8px;
+}
+
+/* 下方信息区域 */
+.info-section {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
 }
 
 .info-card {
-  margin-bottom: 24px;
-}
-
-.card-header {
-  font-weight: 600;
-  font-size: 16px;
+  background: white;
 }
 
 .info-item {
-  margin-bottom: 16px;
+  margin-bottom: 12px;
+}
+
+.info-item:last-child {
+  margin-bottom: 0;
 }
 
 .info-item label {
   display: block;
   font-weight: 500;
-  color: #666;
+  color: #909399;
   margin-bottom: 4px;
+  font-size: 12px;
 }
 
 .info-item span,
 .info-item p {
-  color: #333;
+  color: #303133;
+  font-size: 14px;
+  margin: 0;
 }
 
 .tags-display {
   display: flex;
   flex-wrap: wrap;
+  gap: 4px;
 }
 
-.action-buttons {
+/* EXIF网格 */
+.exif-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.exif-item {
+  padding: 8px;
+  background: #f8f9fa;
+  border-radius: 6px;
+}
+
+.exif-item label {
+  display: block;
+  font-size: 11px;
+  color: #909399;
+  margin-bottom: 4px;
+}
+
+.exif-item span {
+  font-size: 13px;
+  color: #303133;
+  font-weight: 500;
+}
+
+/* 文件信息网格 */
+.file-info-grid {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin-top: 24px;
+  gap: 8px;
+}
+
+/* 操作按钮 */
+.action-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+@media (max-width: 1200px) {
+  .main-content {
+    grid-template-columns: 1fr;
+  }
+  
+  .info-section {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 @media (max-width: 768px) {
-  .image-detail-content {
+  .info-section {
     grid-template-columns: 1fr;
   }
   
@@ -852,6 +866,10 @@ watch(() => userStore.user, (newUser) => {
     flex-direction: column;
     gap: 16px;
     text-align: center;
+  }
+  
+  .exif-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>

@@ -41,11 +41,12 @@ CREATE TABLE image (
 -- 3. 标签表
 CREATE TABLE tag (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(50) NOT NULL UNIQUE,
+    name VARCHAR(50) NOT NULL,
     type ENUM('SYSTEM', 'USER', 'AI') NOT NULL,
     created_by BIGINT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (created_by) REFERENCES user(id) ON DELETE SET NULL,
+    UNIQUE KEY uk_name_user (name, created_by),
     INDEX idx_type (type),
     INDEX idx_name (name)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

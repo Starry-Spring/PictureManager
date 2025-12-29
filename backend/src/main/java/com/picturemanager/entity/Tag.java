@@ -12,7 +12,9 @@ import java.util.HashSet;
 import java.util.Set;
 
 @Entity
-@Table(name = "tag")
+@Table(name = "tag", uniqueConstraints = {
+    @UniqueConstraint(columnNames = {"name", "created_by"})
+})
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -22,7 +24,7 @@ public class Tag {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true, length = 50)
+    @Column(nullable = false, length = 50)
     private String name;
 
     @Enumerated(EnumType.STRING)

@@ -10,7 +10,7 @@ export interface ImageResponseDTO {
     mimeType: string
     width: number
     height: number
-    tags: Set<string>
+    tags: string[]
     uploadedAt: string
 
     // EXIF信息

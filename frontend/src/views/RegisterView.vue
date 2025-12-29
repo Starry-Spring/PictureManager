@@ -1,115 +1,147 @@
 <template>
   <div class="register-container">
+    <div class="register-background">
+      <div class="bg-shape shape-1"></div>
+      <div class="bg-shape shape-2"></div>
+      <div class="bg-shape shape-3"></div>
+    </div>
+    
     <div class="register-card">
-      <div class="logo-section">
-        <h1>亿图了然</h1>
-        <p>图片管理系统</p>
-      </div>
-
-      <div class="form-section">
-        <h2>用户注册</h2>
-
-        <el-form
-            ref="registerFormRef"
-            :model="registerForm"
-            :rules="registerRules"
-            label-position="top"
-            @submit.prevent="handleRegister"
-        >
-          <el-form-item label="用户名" prop="username">
-            <el-input
-                v-model="registerForm.username"
-                placeholder="请输入用户名"
-                size="large"
-                :prefix-icon="User"
-                @blur="checkUsername"
-            />
-            <div v-if="usernameAvailable !== null" class="availability-hint">
-              <span :class="usernameAvailable ? 'available' : 'unavailable'">
-                {{ usernameAvailable ? '✓ 用户名可用' : '✗ 用户名已存在' }}
-              </span>
-            </div>
-          </el-form-item>
-
-          <el-form-item label="邮箱" prop="email">
-            <el-input
-                v-model="registerForm.email"
-                placeholder="请输入邮箱"
-                size="large"
-                :prefix-icon="Message"
-                @blur="checkEmail"
-                type="email"
-            />
-            <div v-if="emailAvailable !== null" class="availability-hint">
-              <span :class="emailAvailable ? 'available' : 'unavailable'">
-                {{ emailAvailable ? '✓ 邮箱可用' : '✗ 邮箱已被注册' }}
-              </span>
-            </div>
-          </el-form-item>
-
-          <el-form-item label="显示名称" prop="displayName">
-            <el-input
-                v-model="registerForm.displayName"
-                placeholder="请输入显示名称（可选）"
-                size="large"
-                :prefix-icon="EditPen"
-            />
-          </el-form-item>
-
-          <el-form-item label="密码" prop="password">
-            <el-input
-                v-model="registerForm.password"
-                type="password"
-                placeholder="请输入密码"
-                size="large"
-                :prefix-icon="Lock"
-                show-password
-            />
-            <div class="password-hint">
-              密码长度至少6位，建议包含字母和数字
-            </div>
-          </el-form-item>
-
-          <el-form-item label="确认密码" prop="confirmPassword">
-            <el-input
-                v-model="registerForm.confirmPassword"
-                type="password"
-                placeholder="请再次输入密码"
-                size="large"
-                :prefix-icon="Lock"
-                show-password
-            />
-          </el-form-item>
-
-          <el-checkbox v-model="agreeTerms" required>
-            我已阅读并同意
-            <el-link type="primary" @click="showTerms = true">
-              《用户协议》
-            </el-link>
-            和
-            <el-link type="primary" @click="showPrivacy = true">
-              《隐私政策》
-            </el-link>
-          </el-checkbox>
-
-          <el-button
-              type="primary"
-              size="large"
-              :loading="loading"
-              @click="handleRegister"
-              class="register-button"
-              :disabled="!agreeTerms"
-          >
-            注册
-          </el-button>
-
-          <div class="login-link">
-            已有账户？
-            <el-link type="primary" @click="goToLogin">
-              立即登录
-            </el-link>
+      <div class="register-left">
+        <div class="brand-content">
+          <div class="brand-icon">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
+            </svg>
           </div>
-        </el-form>
+          <h1>亿图了然</h1>
+          <p>智能图片管理系统</p>
+          <div class="features">
+            <div class="feature-item">
+              <span class="feature-icon">✨</span>
+              <span>免费注册使用</span>
+            </div>
+            <div class="feature-item">
+              <span class="feature-icon">⚡</span>
+              <span>极速上传体验</span>
+            </div>
+            <div class="feature-item">
+              <span class="feature-icon">🌐</span>
+              <span>多端同步访问</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="register-right">
+        <div class="form-section">
+          <h2>创建账户</h2>
+          <p class="subtitle">加入我们，开启智能图片管理之旅</p>
+
+          <el-form
+              ref="registerFormRef"
+              :model="registerForm"
+              :rules="registerRules"
+              label-position="top"
+              @submit.prevent="handleRegister"
+              class="register-form"
+          >
+            <div class="form-row">
+              <el-form-item label="用户名" prop="username">
+                <el-input
+                    v-model="registerForm.username"
+                    placeholder="请输入用户名"
+                    size="large"
+                    :prefix-icon="User"
+                    @blur="checkUsername"
+                />
+                <div v-if="usernameAvailable !== null" class="availability-hint">
+                  <span :class="usernameAvailable ? 'available' : 'unavailable'">
+                    {{ usernameAvailable ? '✓ 用户名可用' : '✗ 用户名已存在' }}
+                  </span>
+                </div>
+              </el-form-item>
+
+              <el-form-item label="显示名称" prop="displayName">
+                <el-input
+                    v-model="registerForm.displayName"
+                    placeholder="可选"
+                    size="large"
+                    :prefix-icon="EditPen"
+                />
+              </el-form-item>
+            </div>
+
+            <el-form-item label="邮箱" prop="email">
+              <el-input
+                  v-model="registerForm.email"
+                  placeholder="请输入邮箱"
+                  size="large"
+                  :prefix-icon="Message"
+                  @blur="checkEmail"
+                  type="email"
+              />
+              <div v-if="emailAvailable !== null" class="availability-hint">
+                <span :class="emailAvailable ? 'available' : 'unavailable'">
+                  {{ emailAvailable ? '✓ 邮箱可用' : '✗ 邮箱已被注册' }}
+                </span>
+              </div>
+            </el-form-item>
+
+            <div class="form-row">
+              <el-form-item label="密码" prop="password">
+                <el-input
+                    v-model="registerForm.password"
+                    type="password"
+                    placeholder="至少6位"
+                    size="large"
+                    :prefix-icon="Lock"
+                    show-password
+                />
+              </el-form-item>
+
+              <el-form-item label="确认密码" prop="confirmPassword">
+                <el-input
+                    v-model="registerForm.confirmPassword"
+                    type="password"
+                    placeholder="再次输入"
+                    size="large"
+                    :prefix-icon="Lock"
+                    show-password
+                />
+              </el-form-item>
+            </div>
+
+            <el-checkbox v-model="agreeTerms" class="terms-checkbox">
+              我已阅读并同意
+              <el-link type="primary" @click.stop="showTerms = true">
+                《用户协议》
+              </el-link>
+              和
+              <el-link type="primary" @click.stop="showPrivacy = true">
+                《隐私政策》
+              </el-link>
+            </el-checkbox>
+
+            <el-button
+                type="primary"
+                size="large"
+                :loading="loading"
+                @click="handleRegister"
+                class="register-button"
+                :disabled="!agreeTerms"
+            >
+              立即注册
+            </el-button>
+
+            <div class="login-link">
+              已有账户？
+              <el-link type="primary" @click="goToLogin">
+                立即登录
+              </el-link>
+            </div>
+          </el-form>
+        </div>
       </div>
     </div>
 
@@ -120,7 +152,6 @@
         width="600px"
     >
       <div class="terms-content">
-        <!-- 用户协议内容 -->
         <p>欢迎使用亿图了然图片管理系统...</p>
       </div>
       <template #footer>
@@ -135,7 +166,6 @@
         width="600px"
     >
       <div class="terms-content">
-        <!-- 隐私政策内容 -->
         <p>我们非常重视您的隐私...</p>
       </div>
       <template #footer>
@@ -267,48 +297,217 @@ const goToLogin = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
   padding: 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* 背景装饰 */
+.register-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+  z-index: 0;
+}
+
+.bg-shape {
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0.1;
+}
+
+.shape-1 {
+  width: 500px;
+  height: 500px;
+  background: linear-gradient(135deg, #f093fb, #f5576c);
+  top: -150px;
+  left: -150px;
+  animation: float 8s ease-in-out infinite;
+}
+
+.shape-2 {
+  width: 350px;
+  height: 350px;
+  background: linear-gradient(135deg, #4facfe, #00f2fe);
+  bottom: -100px;
+  right: -100px;
+  animation: float 6s ease-in-out infinite reverse;
+}
+
+.shape-3 {
+  width: 250px;
+  height: 250px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  top: 60%;
+  left: 60%;
+  animation: pulse 5s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-30px) rotate(5deg); }
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); opacity: 0.1; }
+  50% { transform: scale(1.15); opacity: 0.18; }
 }
 
 .register-card {
   width: 100%;
-  max-width: 480px;
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+  max-width: 1000px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 24px;
+  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.3);
+  display: grid;
+  grid-template-columns: 400px 1fr;
+  overflow: hidden;
+  position: relative;
+  z-index: 1;
+  backdrop-filter: blur(10px);
+}
+
+/* 左侧品牌区 */
+.register-left {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  padding: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
   overflow: hidden;
 }
 
-.logo-section {
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-  color: white;
-  padding: 32px 20px;
+.register-left::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 60%);
+  animation: rotate 25s linear infinite;
+}
+
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.brand-content {
+  position: relative;
+  z-index: 1;
   text-align: center;
+  color: white;
 }
 
-.logo-section h1 {
+.brand-icon {
+  width: 80px;
+  height: 80px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 24px;
+  backdrop-filter: blur(10px);
+}
+
+.brand-icon svg {
+  width: 48px;
+  height: 48px;
+  color: white;
+}
+
+.brand-content h1 {
   margin: 0;
-  font-size: 28px;
-  font-weight: 600;
+  font-size: 36px;
+  font-weight: 700;
+  letter-spacing: 2px;
 }
 
-.logo-section p {
-  margin: 8px 0 0;
+.brand-content p {
+  margin: 12px 0 0;
   font-size: 16px;
   opacity: 0.9;
 }
 
+.features {
+  margin-top: 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.feature-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+  font-size: 14px;
+}
+
+.feature-icon {
+  font-size: 20px;
+}
+
+/* 右侧表单区 */
+.register-right {
+  padding: 40px 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow-y: auto;
+  max-height: 100vh;
+}
+
 .form-section {
-  padding: 32px 32px 40px;
+  width: 100%;
 }
 
 .form-section h2 {
-  margin: 0 0 24px;
-  font-size: 22px;
+  margin: 0;
+  font-size: 28px;
+  font-weight: 600;
+  color: #1a1a2e;
+}
+
+.form-section .subtitle {
+  margin: 8px 0 28px;
+  color: #666;
+  font-size: 14px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.register-form :deep(.el-form-item) {
+  margin-bottom: 20px;
+}
+
+.register-form :deep(.el-form-item__label) {
   font-weight: 500;
   color: #333;
-  text-align: center;
+  padding-bottom: 4px;
+}
+
+.register-form :deep(.el-input__wrapper) {
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.register-form :deep(.el-input__wrapper:hover) {
+  box-shadow: 0 4px 12px rgba(240, 147, 251, 0.15);
 }
 
 .availability-hint {
@@ -324,43 +523,68 @@ const goToLogin = () => {
   color: #f56c6c;
 }
 
-.password-hint {
-  font-size: 12px;
-  color: #666;
-  margin-top: 4px;
+.terms-checkbox {
+  margin-bottom: 20px;
 }
 
 .register-button {
   width: 100%;
-  height: 44px;
-  margin-top: 20px;
+  height: 48px;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 500;
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  border: none;
+  transition: all 0.3s;
+}
+
+.register-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(240, 147, 251, 0.4);
+}
+
+.register-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .login-link {
   text-align: center;
-  margin-top: 24px;
+  margin-top: 20px;
   color: #666;
   font-size: 14px;
-}
-
-.login-link a {
-  margin-left: 8px;
 }
 
 .terms-content {
   max-height: 400px;
   overflow-y: auto;
-  line-height: 1.6;
+  line-height: 1.8;
   color: #333;
+  padding: 8px 0;
 }
 
-@media (max-width: 768px) {
+/* 响应式 */
+@media (max-width: 900px) {
   .register-card {
-    max-width: 100%;
+    grid-template-columns: 1fr;
+    max-width: 480px;
   }
 
-  .form-section {
-    padding: 24px 20px 32px;
+  .register-left {
+    display: none;
+  }
+
+  .register-right {
+    padding: 40px 32px;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .form-section h2::before {
+    content: '🖼️ ';
   }
 }
 </style>

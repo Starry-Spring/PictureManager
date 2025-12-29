@@ -5,18 +5,9 @@
       <!-- 用户头像和信息 -->
       <div class="profile-header">
         <div class="avatar-section">
-          <el-avatar :size="120" :src="userInfo.avatarUrl">
+          <el-avatar :size="120" src="/avatar.png">
             {{ userInfo.displayName?.charAt(0) }}
           </el-avatar>
-          <el-upload
-              class="avatar-upload"
-              action="/api/user/avatar"
-              :show-file-list="false"
-              :on-success="handleAvatarSuccess"
-              :before-upload="beforeAvatarUpload"
-          >
-            <el-button type="text">更换头像</el-button>
-          </el-upload>
         </div>
 
         <div class="profile-info">
@@ -72,17 +63,6 @@
               <div class="form-hint">
                 邮箱不可修改，如需修改请联系管理员
               </div>
-            </el-form-item>
-
-            <el-form-item label="个人简介">
-              <el-input
-                  v-model="infoForm.bio"
-                  type="textarea"
-                  :rows="4"
-                  placeholder="介绍一下自己吧"
-                  maxlength="200"
-                  show-word-limit
-              />
             </el-form-item>
 
             <el-form-item>
@@ -248,15 +228,12 @@ const userInfo = ref({
   username: '',
   email: '',
   displayName: '',
-  avatarUrl: '',
-  lastLoginAt: '',
-  bio: ''
+  lastLoginAt: ''
 })
 
 const infoForm = ref({
   displayName: '',
-  email: '',
-  bio: ''
+  email: ''
 })
 
 const passwordForm = ref({
@@ -350,15 +327,12 @@ const loadUserInfo = async () => {
       username: userStore.user.username || '',
       email: userStore.user.email || '',
       displayName: userStore.user.displayName || userStore.user.username || '',
-      avatarUrl: userStore.user.avatarUrl || '',
-      lastLoginAt: new Date().toISOString(), // 使用当前时间作为本次登录时间
-      bio: ''
+      lastLoginAt: new Date().toISOString()
     }
 
     infoForm.value = {
       displayName: userInfo.value.displayName,
-      email: userInfo.value.email,
-      bio: userInfo.value.bio
+      email: userInfo.value.email
     }
   }
 
@@ -414,30 +388,6 @@ const loadStatistics = async () => {
   } catch (error) {
     console.error('加载统计数据失败:', error)
   }
-}
-
-const handleAvatarSuccess = (response: any) => {
-  if (response.success) {
-    userInfo.value.avatarUrl = response.data.avatarUrl
-    ElMessage.success('头像更新成功')
-  } else {
-    ElMessage.error(response.message || '头像更新失败')
-  }
-}
-
-const beforeAvatarUpload = (file: File) => {
-  const isImage = file.type.startsWith('image/')
-  const isLt2M = file.size / 1024 / 1024 < 2
-
-  if (!isImage) {
-    ElMessage.error('只能上传图片文件')
-    return false
-  }
-  if (!isLt2M) {
-    ElMessage.error('图片大小不能超过 2MB')
-    return false
-  }
-  return true
 }
 
 const saveInfo = async () => {
@@ -564,14 +514,6 @@ watch(() => userStore.user, (newUser) => {
   align-items: center;
   gap: 16px;
   margin-right: 48px;
-}
-
-.avatar-upload :deep(.el-upload) {
-  color: rgba(255, 255, 255, 0.9);
-}
-
-.avatar-upload :deep(.el-upload:hover) {
-  color: white;
 }
 
 .profile-info {

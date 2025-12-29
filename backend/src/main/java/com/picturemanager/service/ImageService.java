@@ -396,12 +396,25 @@ public class ImageService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("用户不存在"));
 
-        List<Tag> tags = tagRepository.findByCreatedBy(user);
+        // 获取用户图片上的所有标签
+        List<Image> userImages = imageRepository.findByUserAndIsDeletedFalse(user);
+        Set<String> tagNames = new HashSet<>();
+        
+        for (Image image : userImages) {
+            if (image.getTags() != null) {
+                for (Tag tag : image.getTags()) {
+                    tagNames.add(tag.getName());
+                }
+            }
+        }
+        
+        // 也添加用户创建的标签
+        List<Tag> userCreatedTags = tagRepository.findByCreatedBy(user);
+        for (Tag tag : userCreatedTags) {
+            tagNames.add(tag.getName());
+        }
 
-        return tags.stream()
-                .map(Tag::getName)
-                .distinct()
-                .collect(Collectors.toList());
+        return new ArrayList<>(tagNames);
     }
 
     private ImageResponseDTO convertToResponseDTO(Image image) {
