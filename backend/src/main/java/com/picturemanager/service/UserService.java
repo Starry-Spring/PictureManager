@@ -97,4 +97,34 @@ public class UserService {
     public Optional<User> getUserById(Long id) {
         return userRepository.findById(id);
     }
+
+    @Transactional
+    public User updateProfile(Long userId, String displayName) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("用户不存在"));
+        
+        if (displayName != null && !displayName.trim().isEmpty()) {
+            user.setDisplayName(displayName.trim());
+        }
+        user.setUpdatedAt(LocalDateTime.now());
+        
+        return userRepository.save(user);
+    }
+
+    @Transactional
+    public void changePassword(Long userId, String currentPassword, String newPassword) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("用户不存在"));
+        
+        // 验证当前密码
+        if (!currentPassword.equals(user.getPasswordHash())) {
+            throw new RuntimeException("当前密码错误");
+        }
+        
+        // 更新密码
+        user.setPasswordHash(newPassword);
+        user.setUpdatedAt(LocalDateTime.now());
+        
+        userRepository.save(user);
+    }
 }

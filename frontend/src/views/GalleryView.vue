@@ -594,12 +594,13 @@ watch(() => route.query.keyword, (newKeyword) => {
   cursor: pointer;
   overflow: hidden;
   border-radius: 8px;
+  background: linear-gradient(135deg, #e6f7ff 0%, #f0f9ff 100%);
 }
 
 .carousel-image {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   transition: transform 0.3s;
 }
 

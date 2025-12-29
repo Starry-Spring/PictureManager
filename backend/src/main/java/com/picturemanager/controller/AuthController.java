@@ -127,4 +127,45 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
         }
     }
+
+    @PutMapping("/profile")
+    public ResponseEntity<?> updateProfile(@RequestParam Long userId, @RequestBody Map<String, String> request) {
+        try {
+            String displayName = request.get("displayName");
+            User user = userService.updateProfile(userId, displayName);
+            
+            UserResponseDTO response = new UserResponseDTO();
+            response.setId(user.getId());
+            response.setUsername(user.getUsername());
+            response.setEmail(user.getEmail());
+            response.setDisplayName(user.getDisplayName());
+            response.setAvatarUrl(user.getAvatarUrl());
+            
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            Map<String, String> error = new HashMap<>();
+            error.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(error);
+        }
+    }
+
+    @PostMapping("/change-password")
+    public ResponseEntity<?> changePassword(@RequestParam Long userId, @RequestBody Map<String, String> request) {
+        try {
+            String currentPassword = request.get("currentPassword");
+            String newPassword = request.get("newPassword");
+            
+            if (currentPassword == null || newPassword == null) {
+                throw new RuntimeException("参数不完整");
+            }
+            
+            userService.changePassword(userId, currentPassword, newPassword);
+            
+            return ResponseEntity.ok(Map.of("message", "密码修改成功"));
+        } catch (RuntimeException e) {
+            Map<String, String> error = new HashMap<>();
+            error.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(error);
+        }
+    }
 }

@@ -443,8 +443,7 @@ const beforeAvatarUpload = (file: File) => {
 const saveInfo = async () => {
   try {
     savingInfo.value = true
-    // 调用后端API更新用户信息
-    // 暂时模拟成功
+    // 模拟API调用
     await new Promise(resolve => setTimeout(resolve, 1000))
 
     userInfo.value.displayName = infoForm.value.displayName
@@ -466,8 +465,7 @@ const saveInfo = async () => {
 const changePassword = async () => {
   try {
     changingPassword.value = true
-    // 调用后端API修改密码
-    // 暂时模拟成功
+    // 模拟API调用
     await new Promise(resolve => setTimeout(resolve, 1000))
 
     passwordForm.value = {

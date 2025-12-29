@@ -28,7 +28,9 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/login", "/api/auth/register").permitAll()  // 登录注册无需认证
+                        .requestMatchers("/api/auth/profile", "/api/auth/change-password").permitAll()  // 用户信息更新
                         .requestMatchers("/api/images/*/file").permitAll()  // 图片文件通过URL参数验证
+                        .requestMatchers("/api/images/*/thumbnail").permitAll()  // 缩略图通过URL参数验证
                         .anyRequest().authenticated()  // 其他请求需要认证
                 );
 
