@@ -39,14 +39,24 @@ public class UserService {
 
             return userRepository.save(user);
         } catch (Exception e) {
+            // 获取完整的异常信息链
+            String errorMsg = e.getMessage();
+            Throwable cause = e.getCause();
+            while (cause != null) {
+                if (cause.getMessage() != null) {
+                    errorMsg += " " + cause.getMessage();
+                }
+                cause = cause.getCause();
+            }
+            
             // 检查是否是唯一约束冲突
-            if (e.getMessage().contains("username") && e.getMessage().contains("Duplicate entry")) {
+            if (errorMsg.toLowerCase().contains("duplicate") && errorMsg.toLowerCase().contains("username")) {
                 throw new RuntimeException("用户名已存在");
-            } else if (e.getMessage().contains("email") && e.getMessage().contains("Duplicate entry")) {
+            } else if (errorMsg.toLowerCase().contains("duplicate") && errorMsg.toLowerCase().contains("email")) {
                 throw new RuntimeException("邮箱已被注册");
             } else {
                 // 重新抛出其他异常
-                throw e;
+                throw new RuntimeException("注册失败，请稍后重试");
             }
         }
     }
@@ -128,5 +138,13 @@ public class UserService {
         user.setUpdatedAt(LocalDateTime.now());
         
         userRepository.save(user);
+    }
+    
+    @Transactional
+    public void deleteUser(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("用户不存在"));
+        
+        userRepository.delete(user);
     }
 }

@@ -210,6 +210,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useUserStore } from '../stores/userStore'
+import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   Message,
@@ -221,6 +222,7 @@ import { formatDate, formatFileSize } from '../utils/formatters'
 import axios from 'axios'
 
 const userStore = useUserStore()
+const router = useRouter()
 
 // 数据
 const activeTab = ref('info')
@@ -466,8 +468,18 @@ const showDeleteDialog = () => {
         cancelButtonText: '取消',
         confirmButtonClass: 'el-button--danger'
       }
-  ).then(() => {
-    ElMessage.info('账户删除功能开发中...')
+  ).then(async () => {
+    try {
+      await axios.delete('/api/auth/delete-account', {
+        params: { userId: userId.value }
+      })
+      ElMessage.success('账户已删除')
+      // 清除用户信息并跳转到登录页
+      userStore.logout()
+      router.push('/login')
+    } catch (error: any) {
+      ElMessage.error(error.response?.data?.message || '删除失败')
+    }
   })
 }
 

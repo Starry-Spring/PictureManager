@@ -168,4 +168,16 @@ public class AuthController {
             return ResponseEntity.badRequest().body(error);
         }
     }
+    
+    @DeleteMapping("/delete-account")
+    public ResponseEntity<?> deleteAccount(@RequestParam Long userId) {
+        try {
+            userService.deleteUser(userId);
+            return ResponseEntity.ok(Map.of("message", "账户已删除"));
+        } catch (RuntimeException e) {
+            Map<String, String> error = new HashMap<>();
+            error.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(error);
+        }
+    }
 }
