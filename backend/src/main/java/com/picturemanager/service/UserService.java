@@ -22,31 +22,33 @@ public class UserService {
 
     @Transactional
     public User register(UserDTO userDTO) {
-        // 检查用户名是否已存在
-        if (userRepository.findByUsername(userDTO.getUsername()).isPresent()) {
-            throw new RuntimeException("用户名已存在");
+        try {
+            // 创建用户
+            User user = new User();
+            user.setUsername(userDTO.getUsername());
+            user.setEmail(userDTO.getEmail());
+
+            // 直接存储密码（仅用于开发测试）
+            user.setPasswordHash(userDTO.getPassword());
+
+            user.setDisplayName(userDTO.getDisplayName() != null ?
+                    userDTO.getDisplayName() : userDTO.getUsername());
+            user.setAvatarUrl("/assets/default-avatar.png");
+            user.setCreatedAt(LocalDateTime.now());
+            user.setUpdatedAt(LocalDateTime.now());
+
+            return userRepository.save(user);
+        } catch (Exception e) {
+            // 检查是否是唯一约束冲突
+            if (e.getMessage().contains("username") && e.getMessage().contains("Duplicate entry")) {
+                throw new RuntimeException("用户名已存在");
+            } else if (e.getMessage().contains("email") && e.getMessage().contains("Duplicate entry")) {
+                throw new RuntimeException("邮箱已被注册");
+            } else {
+                // 重新抛出其他异常
+                throw e;
+            }
         }
-
-        // 检查邮箱是否已存在
-        if (userRepository.findByEmail(userDTO.getEmail()).isPresent()) {
-            throw new RuntimeException("邮箱已被注册");
-        }
-
-        // 创建用户
-        User user = new User();
-        user.setUsername(userDTO.getUsername());
-        user.setEmail(userDTO.getEmail());
-
-        // 直接存储密码（仅用于开发测试）
-        user.setPasswordHash(userDTO.getPassword());
-
-        user.setDisplayName(userDTO.getDisplayName() != null ?
-                userDTO.getDisplayName() : userDTO.getUsername());
-        user.setAvatarUrl("/assets/default-avatar.png");
-        user.setCreatedAt(LocalDateTime.now());
-        user.setUpdatedAt(LocalDateTime.now());
-
-        return userRepository.save(user);
     }
 
     @Transactional

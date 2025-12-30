@@ -127,9 +127,9 @@
             <label>拍摄时间</label>
             <span>{{ formatDate(exifInfo.DateTime) }}</span>
           </div>
-          <div class="exif-item">
+          <div class="exif-item" v-if="exifInfo?.GPSLatitude || exifInfo?.GPSLongitude">
             <label>拍摄地点</label>
-            <span>{{ exifInfo?.GPSLatitude ? `纬度${exifInfo.GPSLatitude}, 经度${exifInfo.GPSLongitude}` : '杭州' }}</span>
+            <span>{{ `纬度${exifInfo.GPSLatitude}, 经度${exifInfo.GPSLongitude}` }}</span>
           </div>
           <div class="exif-item" v-if="exifInfo?.Make || exifInfo?.Model">
             <label>拍摄设备</label>
