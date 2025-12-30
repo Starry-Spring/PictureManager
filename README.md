@@ -43,9 +43,6 @@ npm run dev
 
 数据库
 ```angular2html
-# 启动数据库
-docker-compose logs -f mysql
-
 # 登录 MySQL
 mysql -h 127.0.0.1 -P 3307 -u root -p picture_manager
 

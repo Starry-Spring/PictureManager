@@ -374,6 +374,15 @@ public class ImageService {
                 throw new RuntimeException("图片裁剪失败: " + e.getMessage());
             }
         }
+        
+        // 处理色调调整
+        if (imageUpdateDTO.getBrightness() != null || imageUpdateDTO.getContrast() != null || imageUpdateDTO.getSaturation() != null) {
+            try {
+                adjustColors(image, imageUpdateDTO.getBrightness(), imageUpdateDTO.getContrast(), imageUpdateDTO.getSaturation());
+            } catch (IOException e) {
+                throw new RuntimeException("色调调整失败: " + e.getMessage());
+            }
+        }
 
         Image updatedImage = imageRepository.save(image);
         return convertToResponseDTO(updatedImage);
@@ -510,5 +519,81 @@ public class ImageService {
         image.setImageWidth(width);
         image.setImageHeight(height);
         image.setFileSize(imageFile.length());
+        
+        // 重新生成缩略图
+        String newThumbnailPath = generateThumbnail(image.getFilePath(), image.getStoredFilename(), image.getUser().getId());
+        if (newThumbnailPath != null) {
+            image.setThumbnailPath(newThumbnailPath);
+        }
+    }
+    
+    /**
+     * 调整图片色调
+     * @param image 图片实体
+     * @param brightness 亮度 (-100 到 100)
+     * @param contrast 对比度 (-100 到 100)
+     * @param saturation 饱和度 (-100 到 100)
+     */
+    private void adjustColors(Image image, Integer brightness, Integer contrast, Integer saturation) throws IOException {
+        File imageFile = new File(image.getFilePath());
+        BufferedImage originalImage = ImageIO.read(imageFile);
+        
+        int width = originalImage.getWidth();
+        int height = originalImage.getHeight();
+        
+        // 创建新图片
+        BufferedImage adjustedImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+        
+        // 计算调整系数
+        float brightnessFactor = brightness != null ? 1.0f + (brightness / 100.0f) : 1.0f;
+        float contrastFactor = contrast != null ? 1.0f + (contrast / 100.0f) : 1.0f;
+        float saturationFactor = saturation != null ? 1.0f + (saturation / 100.0f) : 1.0f;
+        
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                int rgb = originalImage.getRGB(x, y);
+                
+                int r = (rgb >> 16) & 0xFF;
+                int g = (rgb >> 8) & 0xFF;
+                int b = rgb & 0xFF;
+                
+                // 应用亮度
+                r = (int) (r * brightnessFactor);
+                g = (int) (g * brightnessFactor);
+                b = (int) (b * brightnessFactor);
+                
+                // 应用对比度
+                r = (int) (((r / 255.0 - 0.5) * contrastFactor + 0.5) * 255);
+                g = (int) (((g / 255.0 - 0.5) * contrastFactor + 0.5) * 255);
+                b = (int) (((b / 255.0 - 0.5) * contrastFactor + 0.5) * 255);
+                
+                // 应用饱和度
+                float gray = 0.299f * r + 0.587f * g + 0.114f * b;
+                r = (int) (gray + (r - gray) * saturationFactor);
+                g = (int) (gray + (g - gray) * saturationFactor);
+                b = (int) (gray + (b - gray) * saturationFactor);
+                
+                // 限制范围
+                r = Math.max(0, Math.min(255, r));
+                g = Math.max(0, Math.min(255, g));
+                b = Math.max(0, Math.min(255, b));
+                
+                int newRgb = (r << 16) | (g << 8) | b;
+                adjustedImage.setRGB(x, y, newRgb);
+            }
+        }
+        
+        // 保存调整后的图片
+        String formatName = image.getMimeType().substring(image.getMimeType().lastIndexOf("/") + 1);
+        ImageIO.write(adjustedImage, formatName, imageFile);
+        
+        // 更新文件大小
+        image.setFileSize(imageFile.length());
+        
+        // 重新生成缩略图
+        String newThumbnailPath = generateThumbnail(image.getFilePath(), image.getStoredFilename(), image.getUser().getId());
+        if (newThumbnailPath != null) {
+            image.setThumbnailPath(newThumbnailPath);
+        }
     }
 }

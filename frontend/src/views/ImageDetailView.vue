@@ -425,6 +425,17 @@ const saveChanges = async () => {
     if (editSettings.value.cropTop !== null) {
       requestData.cropTop = editSettings.value.cropTop
     }
+    
+    // 添加色调参数（只有非0时才发送）
+    if (editSettings.value.brightness !== 0) {
+      requestData.brightness = editSettings.value.brightness
+    }
+    if (editSettings.value.contrast !== 0) {
+      requestData.contrast = editSettings.value.contrast
+    }
+    if (editSettings.value.saturation !== 0) {
+      requestData.saturation = editSettings.value.saturation
+    }
 
     const response = await axios.put(`/api/images/${image.value.id}`, requestData, {
       params: {
