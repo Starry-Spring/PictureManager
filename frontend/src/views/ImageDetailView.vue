@@ -251,10 +251,13 @@ const cropContainerStyle = computed(() => {
     return {}
   }
   
+  // 根据屏幕宽度判断是否为移动端
+  const isMobile = window.innerWidth < 768
+  const maxWidth = isMobile ? 300 : 800
+  const maxHeight = isMobile ? 225 : 600
+  
   // 计算显示比例（基于原始图片的宽高比）
   const displayRatio = previewWidth.value / previewHeight.value
-  const maxWidth = 800
-  const maxHeight = 600
   
   let width, height
   if (displayRatio > maxWidth / maxHeight) {

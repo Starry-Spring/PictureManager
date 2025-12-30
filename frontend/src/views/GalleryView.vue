@@ -789,11 +789,29 @@ watch(() => route.query.keyword, (newKeyword) => {
 
   .search-box {
     min-width: unset;
+    flex-wrap: wrap;
+  }
+
+  .search-box .el-select,
+  .search-box .el-input,
+  .search-box .el-button {
+    flex: 1;
+    min-width: 100px;
+  }
+
+  .sort-options {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .sort-options .el-select {
+    flex: 1;
+    min-width: 100px;
   }
 
   .images-grid {
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 16px;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 12px;
   }
 }
 </style>
