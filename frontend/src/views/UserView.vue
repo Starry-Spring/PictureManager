@@ -443,7 +443,7 @@ const changePassword = async () => {
 }
 
 const clearCache = () => {
-  ElMessageBox.confirm('确定要清理本地缓存吗？这不会删除您的任何图片数据，但会需要重新登录。', '清理缓存', {
+  ElMessageBox.confirm('确定要清理本地缓存吗？这不会删除您的任何图片数据。', '清理缓存', {
     type: 'warning'
   }).then(() => {
     // 保存token
