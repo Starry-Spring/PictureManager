@@ -58,4 +58,7 @@ public interface ImageRepository extends JpaRepository<Image, Long> {
     // 根据用户ID查找未删除的图片
     @Query("SELECT i FROM Image i WHERE i.user.id = :userId AND i.isDeleted = false")
     List<Image> findByUserIdAndIsDeletedFalse(@Param("userId") Long userId);
+    
+    // 查找用户的所有图片（包括已删除的）
+    List<Image> findByUser(User user);
 }

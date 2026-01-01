@@ -31,7 +31,18 @@
 
     <!-- 标签过滤 -->
     <div class="tags-section" v-if="tags.length > 0">
-      <h2 class="section-title">标签分类</h2>
+      <div class="tags-header">
+        <h2 class="section-title">标签分类</h2>
+        <el-button 
+          type="primary" 
+          size="small" 
+          @click="cleanupEmptyTags"
+          :loading="cleanupLoading"
+        >
+          <el-icon><Refresh /></el-icon>
+          清理空标签
+        </el-button>
+      </div>
       <div class="tags-container">
         <el-tag
             v-for="tag in tags"
@@ -248,7 +259,8 @@ import {
   Search,
   Plus,
   Delete,
-  Edit
+  Edit,
+  Refresh
 } from '@element-plus/icons-vue'
 import type {ImageResponseDTO} from "../types/image"
 import {formatDate, formatFileSize} from '../utils/formatters'
@@ -264,6 +276,7 @@ const recentImages = ref<ImageResponseDTO[]>([])
 const tags = ref<string[]>([])
 const loading = ref(false)
 const saving = ref(false)
+const cleanupLoading = ref(false)
 
 // 搜索和过滤
 const searchKeyword = ref('')
@@ -510,6 +523,7 @@ const handleDelete = async (imageId: number) => {
       ElMessage.success('图片已删除')
       loadImages()
       loadRecentImages()
+      loadTags()
     } else {
       ElMessage.error('删除失败')
     }
@@ -518,6 +532,28 @@ const handleDelete = async (imageId: number) => {
     if (error !== 'cancel' && error.response) {
       ElMessage.error(error.response?.data?.message || '删除失败')
     }
+  }
+}
+
+const cleanupEmptyTags = async () => {
+  cleanupLoading.value = true
+  try {
+    const response = await axios.delete('/api/images/tags/cleanup', {
+      params: {
+        userId: userId.value
+      }
+    })
+    
+    if (response.status === 200) {
+      ElMessage.success(response.data.message || '清理完成')
+      loadTags()
+    } else {
+      ElMessage.error('清理失败')
+    }
+  } catch (error: any) {
+    ElMessage.error(error.response?.data?.message || '清理失败')
+  } finally {
+    cleanupLoading.value = false
   }
 }
 
@@ -630,6 +666,13 @@ watch(() => route.query.keyword, (newKeyword) => {
 
 .tags-section {
   margin-bottom: 32px;
+}
+
+.tags-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
 }
 
 .tags-container {

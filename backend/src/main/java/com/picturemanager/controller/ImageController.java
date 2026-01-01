@@ -319,6 +319,21 @@ public class ImageController {
         return ResponseEntity.ok(tags);
     }
     
+    @DeleteMapping("/tags/cleanup")
+    public ResponseEntity<?> cleanupEmptyTags(@RequestParam("userId") Long userId) {
+        try {
+            int deletedCount = imageService.cleanupEmptyTags(userId);
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "已清理 " + deletedCount + " 个空标签");
+            response.put("deletedCount", deletedCount);
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            Map<String, String> error = new HashMap<>();
+            error.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(error);
+        }
+    }
+    
     @GetMapping("/{id}/exif")
     public ResponseEntity<?> getImageExif(
             @PathVariable Long id,

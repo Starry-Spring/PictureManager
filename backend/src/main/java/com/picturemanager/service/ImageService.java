@@ -425,6 +425,45 @@ public class ImageService {
 
         return new ArrayList<>(tagNames);
     }
+    
+    @Transactional
+    public int cleanupEmptyTags(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("用户不存在"));
+        
+        // 获取用户创建的所有标签
+        List<Tag> userTags = tagRepository.findByCreatedBy(user);
+        List<Image> userImages = imageRepository.findByUserAndIsDeletedFalse(user);
+        
+        int deletedCount = 0;
+        for (Tag tag : userTags) {
+            // 检查该标签是否有未删除的图片关联
+            boolean hasImages = false;
+            for (Image image : userImages) {
+                if (image.getTags() != null && image.getTags().contains(tag)) {
+                    hasImages = true;
+                    break;
+                }
+            }
+            
+            // 如果没有未删除的图片关联此标签，删除它
+            if (!hasImages) {
+                // 先从所有图片（包括软删除的）中移除该标签的关联
+                List<Image> allUserImages = imageRepository.findByUser(user);
+                for (Image image : allUserImages) {
+                    if (image.getTags() != null && image.getTags().contains(tag)) {
+                        image.getTags().remove(tag);
+                        imageRepository.save(image);
+                    }
+                }
+                
+                tagRepository.delete(tag);
+                deletedCount++;
+            }
+        }
+        
+        return deletedCount;
+    }
 
     private ImageResponseDTO convertToResponseDTO(Image image) {
         ImageResponseDTO dto = new ImageResponseDTO();
